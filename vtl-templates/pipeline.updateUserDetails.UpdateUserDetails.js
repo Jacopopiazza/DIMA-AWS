@@ -1,4 +1,4 @@
-import { util } from '@aws-appsync/utils';
+import { util } from "@aws-appsync/utils";
 
 export function request(ctx) {
   const sub = ctx.identity?.sub;
@@ -7,20 +7,20 @@ export function request(ctx) {
   }
 
   const pk = `USER#${sub}`;
-  const sk = 'USER_DETAILS';
+  const sk = "USER_DETAILS";
 
   const input = ctx.args.input;
   const now = util.time.nowISO8601();
 
-  const sets = ['#updatedAt = :updatedAt'];
+  const sets = ["#updatedAt = :updatedAt"];
   const removes = [];
-  const expressionNames = { '#updatedAt': 'updatedAt' };
-  const rawValues = { ':updatedAt': now };
+  const expressionNames = { "#updatedAt": "updatedAt" };
+  const rawValues = { ":updatedAt": now };
 
   for (const [key, value] of Object.entries(input)) {
-    const isEmptyString = typeof value === 'string' && value.trim() === '';
+    const isEmptyString = typeof value === "string" && value.trim() === "";
     const isEmptyArray =
-      key === 'allergies' && Array.isArray(value) && value.length === 0;
+      key === "allergies" && Array.isArray(value) && value.length === 0;
     const shouldRemove = value === null || isEmptyString || isEmptyArray;
 
     expressionNames[`#${key}`] = key;
@@ -33,12 +33,12 @@ export function request(ctx) {
     }
   }
 
-  let expression = '';
-  if (sets.length > 0) expression += 'SET ' + sets.join(', ');
-  if (removes.length > 0) expression += ' REMOVE ' + removes.join(', ');
+  let expression = "";
+  if (sets.length > 0) expression += "SET " + sets.join(", ");
+  if (removes.length > 0) expression += " REMOVE " + removes.join(", ");
 
   return {
-    operation: 'UpdateItem',
+    operation: "UpdateItem",
     key: {
       PK: { S: pk },
       SK: { S: sk },

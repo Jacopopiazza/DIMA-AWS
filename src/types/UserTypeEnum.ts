@@ -1,4 +1,4 @@
 export enum UserTypeEnum {
-  USER = 'USER',
-  NUTRITIONIST = 'NUTRITIONIST',
+  USER = "USER",
+  NUTRITIONIST = "NUTRITIONIST",
 }

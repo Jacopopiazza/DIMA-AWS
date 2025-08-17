@@ -1,4 +1,4 @@
-import { util } from '@aws-appsync/utils';
+import { util } from "@aws-appsync/utils";
 
 /**
  * AppSync JS Request Template for deleteMealPlan mutation
@@ -16,7 +16,7 @@ export function request(ctx) {
 
   // Validate input
   if (!mealPlanId) {
-    util.error('mealPlanId is required');
+    util.error("mealPlanId is required");
   }
 
   if (!authenticatedUserId) {
@@ -32,7 +32,7 @@ export function request(ctx) {
   const mealPlanSk = `PLAN#${mealPlanId}`;
 
   return {
-    operation: 'DeleteItem',
+    operation: "DeleteItem",
     key: {
       PK: util.dynamodb.toDynamoDB(mealPlanPk),
       SK: util.dynamodb.toDynamoDB(mealPlanSk),
@@ -42,23 +42,23 @@ export function request(ctx) {
 }
 
 export function response(ctx) {
-  console.log('Response context:', JSON.stringify(ctx, null, 2));
+  console.log("Response context:", JSON.stringify(ctx, null, 2));
 
   // Check for errors in the context
   if (ctx.error) {
-    console.log('Error in response:', ctx.error);
+    console.log("Error in response:", ctx.error);
     return {
       success: false,
-      mealPlanId: ctx.stash?.mealPlanId || ctx.args?.mealPlanId || '',
-      message: ctx.error.message || 'Failed to delete meal plan',
+      mealPlanId: ctx.stash?.mealPlanId || ctx.args?.mealPlanId || "",
+      message: ctx.error.message || "Failed to delete meal plan",
     };
   }
 
   // If the operation succeeded
-  console.log('Deletion successful');
+  console.log("Deletion successful");
   return {
     success: true,
-    mealPlanId: ctx.stash?.mealPlanId || ctx.args?.mealPlanId || '',
-    message: 'Meal plan deleted successfully',
+    mealPlanId: ctx.stash?.mealPlanId || ctx.args?.mealPlanId || "",
+    message: "Meal plan deleted successfully",
   };
 }

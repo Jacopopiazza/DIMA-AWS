@@ -24,5 +24,5 @@ export interface Chat {
    * Identifies who sent the most recent message. This can be "user" or "nutritionist".
    * Helps the UI indicate which party last spoke.
    */
-  lastMessageSender?: 'user' | 'nutritionist';
+  lastMessageSender?: "user" | "nutritionist";
 }

@@ -1,4 +1,4 @@
 export enum SubscriptionStatus {
-  FREE = 'FREE',
-  PAID = 'PAID',
+  FREE = "FREE",
+  PAID = "PAID",
 }

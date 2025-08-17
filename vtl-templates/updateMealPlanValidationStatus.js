@@ -1,4 +1,4 @@
-import { util } from '@aws-appsync/utils';
+import { util } from "@aws-appsync/utils";
 
 export function request(ctx) {
   const { validationStatus, mealPlanId } = ctx.args.input;
@@ -6,28 +6,28 @@ export function request(ctx) {
   const sk = ctx.stash.sk;
 
   if (!pk || !sk) {
-    util.error('Meal plan keys not found in stash');
+    util.error("Meal plan keys not found in stash");
   }
   if (!validationStatus) {
-    util.error('validationStatus is required');
+    util.error("validationStatus is required");
   }
-  if (!['VALIDATED', 'NOT_VALIDATED'].includes(validationStatus)) {
-    util.error('validationStatus must be VALIDATED or NOT_VALIDATED');
+  if (!["VALIDATED", "NOT_VALIDATED"].includes(validationStatus)) {
+    util.error("validationStatus must be VALIDATED or NOT_VALIDATED");
   }
 
   return {
-    operation: 'UpdateItem',
+    operation: "UpdateItem",
     key: util.dynamodb.toMapValues({ PK: pk, SK: sk }),
     update: {
       expression:
-        'SET validationStatus = :validationStatus, updatedAt = :updatedAt',
+        "SET validationStatus = :validationStatus, updatedAt = :updatedAt",
       expressionValues: util.dynamodb.toMapValues({
-        ':validationStatus': validationStatus,
-        ':updatedAt': util.time.nowISO8601(),
+        ":validationStatus": validationStatus,
+        ":updatedAt": util.time.nowISO8601(),
       }),
     },
     condition: {
-      expression: 'attribute_exists(PK) AND attribute_exists(SK)',
+      expression: "attribute_exists(PK) AND attribute_exists(SK)",
     },
   };
 }
@@ -42,7 +42,7 @@ export function response(ctx) {
   }
   return {
     success: true,
-    message: 'Meal plan validation status updated successfully.',
+    message: "Meal plan validation status updated successfully.",
     mealPlanId: ctx.args.input.mealPlanId,
   };
 }

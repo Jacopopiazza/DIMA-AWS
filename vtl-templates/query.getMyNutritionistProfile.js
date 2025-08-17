@@ -3,10 +3,10 @@ export function request(ctx) {
   const userId = ctx.identity.sub;
 
   return {
-    operation: 'GetItem',
+    operation: "GetItem",
     key: util.dynamodb.toMapValues({
       PK: `NUTR#${userId}`,
-      SK: 'NUTR_DETAILS',
+      SK: "NUTR_DETAILS",
     }),
   };
 }
@@ -27,7 +27,7 @@ export function response(ctx) {
     specialization: item.Specialization,
     bio: item.Bio,
     profilePictureUrl:
-      item.ProfilePictureURL && item.ProfilePictureURL.trim() !== ''
+      item.ProfilePictureURL && item.ProfilePictureURL.trim() !== ""
         ? item.ProfilePictureURL
         : null,
     isAvailable: item.IsAvailable,

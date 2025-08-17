@@ -13,7 +13,7 @@ export function request(ctx) {
   // Prepare the item data for create/update
   const itemData = {
     PK: `NUTR#${userId}`,
-    SK: 'NUTR_DETAILS',
+    SK: "NUTR_DETAILS",
     NutritionistID: userId,
     GivenName: givenName,
     FamilyName: familyName,
@@ -24,15 +24,15 @@ export function request(ctx) {
     CreatedAt: now,
     UpdatedAt: now,
     // GSI1 keys for listing
-    GSI1PK: 'NUTR_PROFILES_ALL',
+    GSI1PK: "NUTR_PROFILES_ALL",
     GSI1SK: `NUTRID#${userId}`,
   };
 
   return {
-    operation: 'PutItem',
+    operation: "PutItem",
     key: util.dynamodb.toMapValues({
       PK: `NUTR#${userId}`,
-      SK: 'NUTR_DETAILS',
+      SK: "NUTR_DETAILS",
     }),
     attributeValues: util.dynamodb.toMapValues(itemData),
   };
@@ -54,7 +54,7 @@ export function response(ctx) {
     specialization: item.Specialization,
     bio: item.Bio,
     profilePictureUrl:
-      item.ProfilePictureURL && item.ProfilePictureURL.trim() !== ''
+      item.ProfilePictureURL && item.ProfilePictureURL.trim() !== ""
         ? item.ProfilePictureURL
         : null,
     isAvailable: item.IsAvailable,

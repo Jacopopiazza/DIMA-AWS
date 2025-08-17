@@ -1,4 +1,4 @@
-import { UserTypeEnum } from './UserTypeEnum';
+import { UserTypeEnum } from "./UserTypeEnum";
 
 export interface ChatMessage {
   /**

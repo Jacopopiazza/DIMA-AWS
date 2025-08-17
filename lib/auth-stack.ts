@@ -1,11 +1,11 @@
-import * as cdk from 'aws-cdk-lib';
-import * as cognito from 'aws-cdk-lib/aws-cognito';
-import * as cognito_identity from 'aws-cdk-lib/aws-cognito';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import { Construct } from 'constructs';
+import * as cdk from "aws-cdk-lib";
+import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as cognito_identity from "aws-cdk-lib/aws-cognito";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction, OutputFormat } from "aws-cdk-lib/aws-lambda-nodejs";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import { Construct } from "constructs";
 
 export class AuthStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
@@ -16,15 +16,15 @@ export class AuthStack extends cdk.Stack {
     // Retrieve the secret from Secrets Manager
     const googleSecret = secretsmanager.Secret.fromSecretNameV2(
       this,
-      'SIGN_IN_WITH_GOOGLE',
-      'SIGN_IN_WITH_GOOGLE', // Name of the secret in Secrets Manager
+      "SIGN_IN_WITH_GOOGLE",
+      "SIGN_IN_WITH_GOOGLE", // Name of the secret in Secrets Manager
     );
 
     // Define the Pre-Signup Lambda Function
-    const preSignUpLambda = new NodejsFunction(this, 'PreSignUpLambda', {
+    const preSignUpLambda = new NodejsFunction(this, "PreSignUpLambda", {
       runtime: lambda.Runtime.NODEJS_22_X,
-      entry: 'src/lambda/pre-sign-up/index.ts',
-      handler: 'handler',
+      entry: "src/lambda/pre-sign-up/index.ts",
+      handler: "handler",
       bundling: {
         format: OutputFormat.ESM,
         bundleAwsSDK: false,
@@ -36,11 +36,11 @@ export class AuthStack extends cdk.Stack {
     // Define the Pre-Signup Lambda Function
     const postConfirmation = new NodejsFunction(
       this,
-      'PostConfirmationLambda',
+      "PostConfirmationLambda",
       {
         runtime: lambda.Runtime.NODEJS_22_X,
-        entry: 'src/lambda/post-confirmation/index.ts',
-        handler: 'handler',
+        entry: "src/lambda/post-confirmation/index.ts",
+        handler: "handler",
         bundling: {
           format: OutputFormat.ESM,
           bundleAwsSDK: false,
@@ -48,14 +48,14 @@ export class AuthStack extends cdk.Stack {
           sourceMap: true, // Generate source maps
         },
         environment: {
-          TABLE_NAME: 'MealPlanningTable',
+          TABLE_NAME: "MealPlanningTable",
         },
       },
     );
 
     // Define the Cognito User Pool
-    this.userPool = new cognito.UserPool(this, 'UserPool', {
-      userPoolName: 'MyUserPool',
+    this.userPool = new cognito.UserPool(this, "UserPool", {
+      userPoolName: "MyUserPool",
       selfSignUpEnabled: true,
       signInAliases: {
         email: true,
@@ -112,24 +112,24 @@ export class AuthStack extends cdk.Stack {
     preSignUpLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [
-          'cognito-idp:AdminLinkProviderForUser',
-          'cognito-idp:ListUsers',
-          'cognito-idp:AdminCreateUser',
-          'cognito-idp:AdminSetUserPassword',
-          'cognito-idp:AdminAddUserToGroup',
-          'cognito-idp:AdminDeleteUser',
+          "cognito-idp:AdminLinkProviderForUser",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminSetUserPassword",
+          "cognito-idp:AdminAddUserToGroup",
+          "cognito-idp:AdminDeleteUser",
         ],
-        resources: ['*'], // needed to avoid circular dependency
+        resources: ["*"], // needed to avoid circular dependency
       }),
     );
 
     postConfirmation.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [
-          'cognito-idp:AdminAddUserToGroup',
-          'cognito-idp:AdminListGroupsForUser',
+          "cognito-idp:AdminAddUserToGroup",
+          "cognito-idp:AdminListGroupsForUser",
         ],
-        resources: ['*'],
+        resources: ["*"],
       }),
     );
 
@@ -137,50 +137,50 @@ export class AuthStack extends cdk.Stack {
     postConfirmation.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [
-          'dynamodb:PutItem',
-          'dynamodb:GetItem',
-          'dynamodb:UpdateItem',
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
         ],
-        resources: ['*'], // In production, specify the exact table ARN
+        resources: ["*"], // In production, specify the exact table ARN
       }),
     );
 
     // Define User Pool Groups
-    const userGroup = new cognito.CfnUserPoolGroup(this, 'UserGroup', {
+    const userGroup = new cognito.CfnUserPoolGroup(this, "UserGroup", {
       userPoolId: this.userPool.userPoolId,
-      groupName: 'USERS',
+      groupName: "USERS",
       precedence: 0,
     });
 
     const nutritionistGroup = new cognito.CfnUserPoolGroup(
       this,
-      'NutritionistGroup',
+      "NutritionistGroup",
       {
         userPoolId: this.userPool.userPoolId,
-        groupName: 'NUTRITIONISTS',
+        groupName: "NUTRITIONISTS",
         precedence: 1,
       },
     );
 
-    const adminGroup = new cognito.CfnUserPoolGroup(this, 'AdminGroup', {
+    const adminGroup = new cognito.CfnUserPoolGroup(this, "AdminGroup", {
       userPoolId: this.userPool.userPoolId,
-      groupName: 'ADMIN',
+      groupName: "ADMIN",
       precedence: 2,
     });
 
     // Define the Google Identity Provider
     const googleProvider = new cognito.UserPoolIdentityProviderGoogle(
       this,
-      'GoogleProvider',
+      "GoogleProvider",
       {
         clientId: googleSecret
-          .secretValueFromJson('GOOGLE_CLIENT_ID')
+          .secretValueFromJson("GOOGLE_CLIENT_ID")
           .unsafeUnwrap(), // Use Secrets Manager or SSM Parameter Store for production
         clientSecretValue: googleSecret.secretValueFromJson(
-          'GOOGLE_CLIENT_SECRET',
+          "GOOGLE_CLIENT_SECRET",
         ), // Use Secrets Manager or SSM Parameter Store for production
         userPool: this.userPool,
-        scopes: ['profile', 'email', 'openid'],
+        scopes: ["profile", "email", "openid"],
         attributeMapping: {
           email: cognito.ProviderAttribute.GOOGLE_EMAIL,
           givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
@@ -192,14 +192,14 @@ export class AuthStack extends cdk.Stack {
     );
 
     // Add a domain to the User Pool
-    const userPoolDomain = this.userPool.addDomain('MyUserPoolDomain', {
+    const userPoolDomain = this.userPool.addDomain("MyUserPoolDomain", {
       cognitoDomain: {
-        domainPrefix: 'e2c748be1d135a2c6733', // Replace with your unique domain prefix
+        domainPrefix: "e2c748be1d135a2c6733", // Replace with your unique domain prefix
       },
     });
 
     // Define the User Pool Client
-    const userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
+    const userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
       userPool: this.userPool,
       authFlows: {
         userPassword: true,
@@ -210,8 +210,8 @@ export class AuthStack extends cdk.Stack {
         cognito.UserPoolClientIdentityProvider.GOOGLE,
       ],
       oAuth: {
-        callbackUrls: ['http://localhost:3000/profile', 'dima://auth'],
-        logoutUrls: ['http://localhost:3000/', 'dima://logout'],
+        callbackUrls: ["http://localhost:3000/profile", "dima://auth"],
+        logoutUrls: ["http://localhost:3000/", "dima://logout"],
       },
       accessTokenValidity: cdk.Duration.hours(1),
       idTokenValidity: cdk.Duration.days(1),
@@ -221,9 +221,9 @@ export class AuthStack extends cdk.Stack {
     // Create a Cognito Identity Pool (with unauthenticated access disabled)
     const identityPool = new cognito_identity.CfnIdentityPool(
       this,
-      'MyIdentityPool',
+      "MyIdentityPool",
       {
-        identityPoolName: 'MyIdentityPool',
+        identityPoolName: "MyIdentityPool",
         allowUnauthenticatedIdentities: false, // Disable unauthenticated access
         cognitoIdentityProviders: [
           {
@@ -235,37 +235,37 @@ export class AuthStack extends cdk.Stack {
     );
 
     // Create IAM Role for Authenticated Users
-    const authenticatedRole = new iam.Role(this, 'AuthenticatedRole', {
+    const authenticatedRole = new iam.Role(this, "AuthenticatedRole", {
       assumedBy: new iam.FederatedPrincipal(
-        'cognito-identity.amazonaws.com',
+        "cognito-identity.amazonaws.com",
         {
           StringEquals: {
-            'cognito-identity.amazonaws.com:aud': identityPool.ref,
+            "cognito-identity.amazonaws.com:aud": identityPool.ref,
           },
-          'ForAnyValue:StringLike': {
-            'cognito-identity.amazonaws.com:amr': 'authenticated',
+          "ForAnyValue:StringLike": {
+            "cognito-identity.amazonaws.com:amr": "authenticated",
           },
         },
-        'sts:AssumeRoleWithWebIdentity',
+        "sts:AssumeRoleWithWebIdentity",
       ),
     });
 
     userPoolClient.node.addDependency(googleProvider);
 
     // Output the User Pool ID and Client ID
-    new cdk.CfnOutput(this, 'UserPoolId', {
+    new cdk.CfnOutput(this, "UserPoolId", {
       value: this.userPool.userPoolId,
     });
 
-    new cdk.CfnOutput(this, 'UserPoolClientId', {
+    new cdk.CfnOutput(this, "UserPoolClientId", {
       value: userPoolClient.userPoolClientId,
     });
 
-    new cdk.CfnOutput(this, 'IdentityPoolId', { value: identityPool.ref });
+    new cdk.CfnOutput(this, "IdentityPoolId", { value: identityPool.ref });
 
-    new cdk.CfnOutput(this, 'CognitoOAuthRedirectUri', {
+    new cdk.CfnOutput(this, "CognitoOAuthRedirectUri", {
       value: `https://${userPoolDomain.domainName}.auth.${this.region}.amazoncognito.com/oauth2/idpresponse`,
-      description: 'The OAuth redirect URI for the Cognito User Pool',
+      description: "The OAuth redirect URI for the Cognito User Pool",
     });
   }
 }

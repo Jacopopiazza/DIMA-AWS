@@ -1,4 +1,4 @@
-import { util } from '@aws-appsync/utils';
+import { util } from "@aws-appsync/utils";
 
 export async function pipeline(ctx) {
   // 1. Authenticate user
@@ -7,13 +7,13 @@ export async function pipeline(ctx) {
   }
 
   // 2. List all meal plans for the user
-  const listPlansFn = require('./query.listMyMealPlans.js');
+  const listPlansFn = require("./query.listMyMealPlans.js");
   const listResult = listPlansFn.request(ctx);
   ctx.prev = { result: await ctx.callDynamoDB(listResult) };
   const items = ctx.prev.result.items || [];
 
   // 3. Create the new meal plan
-  const createPlanFn = require('./mutation.createMealPlan.js');
+  const createPlanFn = require("./mutation.createMealPlan.js");
   const createResult = createPlanFn.request(ctx);
   ctx.result = await ctx.callDynamoDB(createResult);
   ctx.stash.newMealPlanId = ctx.stash.newMealPlanId || ctx.result.mealPlanId;
@@ -25,7 +25,7 @@ export async function pipeline(ctx) {
     tableName: process.env.TABLE_NAME || ctx.env.TABLE_NAME,
   };
   await ctx.callLambda(
-    'DeactivateOtherMealPlansLambdaDataSource',
+    "DeactivateOtherMealPlansLambdaDataSource",
     lambdaPayload,
   );
 

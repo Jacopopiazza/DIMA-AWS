@@ -5,12 +5,12 @@ export function request(ctx) {
   const filter = ctx.args.filter || {};
 
   let query = {
-    operation: 'Query',
-    index: 'GSI1_NutritionistListings',
+    operation: "Query",
+    index: "GSI1_NutritionistListings",
     query: {
-      expression: 'GSI1PK = :pk',
+      expression: "GSI1PK = :pk",
       expressionValues: {
-        ':pk': { S: 'NUTR_PROFILES_ALL' },
+        ":pk": { S: "NUTR_PROFILES_ALL" },
       },
     },
     limit: limit,
@@ -19,8 +19,8 @@ export function request(ctx) {
 
   // Add filter for availability if specified
   if (filter.isAvailable !== undefined) {
-    query.query.expression += ' AND IsAvailable = :isAvailable';
-    query.query.expressionValues[':isAvailable'] = { BOOL: filter.isAvailable };
+    query.query.expression += " AND IsAvailable = :isAvailable";
+    query.query.expressionValues[":isAvailable"] = { BOOL: filter.isAvailable };
   }
 
   // Add pagination token if provided
@@ -45,7 +45,7 @@ export function response(ctx) {
     specialization: item.Specialization,
     bio: item.Bio,
     profilePictureUrl:
-      item.ProfilePictureURL && item.ProfilePictureURL.trim() !== ''
+      item.ProfilePictureURL && item.ProfilePictureURL.trim() !== ""
         ? item.ProfilePictureURL
         : null,
     isAvailable: item.IsAvailable,

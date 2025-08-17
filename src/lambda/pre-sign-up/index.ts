@@ -1,31 +1,31 @@
-import { UserTypeEnum } from '../../types/UserTypeEnum';
-import { SubscriptionStatus } from '../../types/SubscriptionStatus';
+import { UserTypeEnum } from "../../types/UserTypeEnum";
+import { SubscriptionStatus } from "../../types/SubscriptionStatus";
 import {
   createUser,
   deleteUser,
   findUserByEmail,
   linkSocialAccount,
   setUserPassword,
-} from '../utils';
-import { PreSignUpTriggerHandler, PreSignUpTriggerEvent } from 'aws-lambda';
+} from "../utils";
+import { PreSignUpTriggerHandler, PreSignUpTriggerEvent } from "aws-lambda";
 
 export const handler: PreSignUpTriggerHandler = async (
   event: PreSignUpTriggerEvent,
 ) => {
-  console.log('preSignup event', JSON.stringify(event, null, 2));
+  console.log("preSignup event", JSON.stringify(event, null, 2));
 
   const { triggerSource, userPoolId, userName, request } = event;
 
-  if (triggerSource === 'PreSignUp_SignUp') {
+  if (triggerSource === "PreSignUp_SignUp") {
     // A request coming from the app must have the role and subscriptionStatus attributes
 
-    const role: string = request.userAttributes['custom:role'];
+    const role: string = request.userAttributes["custom:role"];
     const subscriptionStatus: string =
-      request.userAttributes['custom:subscriptionStatus'];
+      request.userAttributes["custom:subscriptionStatus"];
 
     if (!role) {
-      console.error('User role not defined');
-      throw new Error('User role is required');
+      console.error("User role not defined");
+      throw new Error("User role is required");
     }
 
     if (!Object.values(UserTypeEnum).includes(role as any)) {
@@ -36,8 +36,8 @@ export const handler: PreSignUpTriggerHandler = async (
     }
 
     if (!subscriptionStatus) {
-      console.error('Subscription status not defined');
-      throw new Error('Subscription status is required');
+      console.error("Subscription status not defined");
+      throw new Error("Subscription status is required");
     }
 
     if (
@@ -48,7 +48,7 @@ export const handler: PreSignUpTriggerHandler = async (
         `Invalid subscription status: ${subscriptionStatus}. Allowed subscription statuses are: FREE, PAID`,
       );
     }
-  } else if (triggerSource === 'PreSignUp_ExternalProvider') {
+  } else if (triggerSource === "PreSignUp_ExternalProvider") {
     const {
       userAttributes: { email, given_name, family_name },
     } = request;
@@ -57,7 +57,7 @@ export const handler: PreSignUpTriggerHandler = async (
     const normalizedEmail = email.toLowerCase();
 
     // Extract provider name and user ID from userName (e.g., "Google_123456789")
-    let [providerName, providerUserId] = userName.split('_');
+    let [providerName, providerUserId] = userName.split("_");
     providerName = providerName.charAt(0).toUpperCase() + providerName.slice(1);
 
     try {
@@ -86,10 +86,10 @@ export const handler: PreSignUpTriggerHandler = async (
           });
 
           if (!newUser) {
-            throw new Error('Failed to create user in Cognito');
+            throw new Error("Failed to create user in Cognito");
           }
         } catch (error) {
-          console.error('Error during account creation:', error);
+          console.error("Error during account creation:", error);
           throw error;
         }
 
@@ -116,7 +116,7 @@ export const handler: PreSignUpTriggerHandler = async (
           event.response.autoConfirmUser = true;
           event.response.autoVerifyEmail = true;
         } catch (error) {
-          console.error('Error during account setup:', error);
+          console.error("Error during account setup:", error);
 
           // Clean up by deleting the user
           try {
@@ -125,14 +125,14 @@ export const handler: PreSignUpTriggerHandler = async (
               userName: newUser.Username!,
             });
           } catch (error) {
-            console.error('Error during cleanup:', error);
+            console.error("Error during cleanup:", error);
           }
 
           throw error;
         }
       }
     } catch (error) {
-      console.error('Error during PreSignUp_ExternalProvider handling:', error);
+      console.error("Error during PreSignUp_ExternalProvider handling:", error);
       throw error;
     }
   }

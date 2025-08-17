@@ -1,11 +1,11 @@
-import { AllergenEnum } from './AllergenEnum';
-import { ExerciseFrequency } from './ExerciseFrequency';
+import { AllergenEnum } from "./AllergenEnum";
+import { ExerciseFrequency } from "./ExerciseFrequency";
 
 // backend/src/types/UserProfile.ts
 export interface UserProfile {
   userId: string;
   preferences: {
-    sex?: 'male' | 'female' | 'other';
+    sex?: "male" | "female" | "other";
     age?: number;
     weightKg?: number; // Match GraphQL
     heightCm?: number; // Match GraphQL

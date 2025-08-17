@@ -1,4 +1,4 @@
-import { util } from '@aws-appsync/utils';
+import { util } from "@aws-appsync/utils";
 
 /**
  * Modifies a meal plan name in DynamoDB with proper user authentication.
@@ -15,11 +15,11 @@ export function request(ctx) {
 
   // Validate input
   if (!mealPlanId) {
-    util.error('mealPlanId is required');
+    util.error("mealPlanId is required");
   }
 
   if (!mealPlanName) {
-    util.error('mealPlanName is required');
+    util.error("mealPlanName is required");
   }
 
   const pk = `USER#${userId}`;
@@ -27,17 +27,17 @@ export function request(ctx) {
   const now = util.time.nowISO8601();
 
   return {
-    operation: 'UpdateItem',
+    operation: "UpdateItem",
     key: util.dynamodb.toMapValues({ PK: pk, SK: sk }),
     update: {
-      expression: 'SET planName = :planName, updatedAt = :updatedAt',
+      expression: "SET planName = :planName, updatedAt = :updatedAt",
       expressionValues: util.dynamodb.toMapValues({
-        ':planName': mealPlanName,
-        ':updatedAt': now,
+        ":planName": mealPlanName,
+        ":updatedAt": now,
       }),
     },
     condition: {
-      expression: 'attribute_exists(PK) AND attribute_exists(SK)',
+      expression: "attribute_exists(PK) AND attribute_exists(SK)",
     },
   };
 }
@@ -58,7 +58,7 @@ export function response(ctx) {
 
   return {
     success: true,
-    message: 'Meal plan name modified successfully.',
+    message: "Meal plan name modified successfully.",
     mealPlanId: ctx.args.mealPlanId,
   };
 }

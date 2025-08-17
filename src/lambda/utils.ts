@@ -9,23 +9,23 @@ import {
   AdminAddUserToGroupCommand,
   AdminListGroupsForUserCommand,
   AdminDeleteUserCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
-import { SubscriptionStatus } from '../types/SubscriptionStatus';
-import { UserTypeEnum } from '../types/UserTypeEnum';
+} from "@aws-sdk/client-cognito-identity-provider";
+import { SubscriptionStatus } from "../types/SubscriptionStatus";
+import { UserTypeEnum } from "../types/UserTypeEnum";
 
 const cognitoIdentityProviderClient = new CognitoIdentityProviderClient({
   region: process.env.AWS_REGION,
 });
 
 const generatePassword = (length: number = 16): string => {
-  const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
-  const numberChars = '0123456789';
-  const specialChars = '!@#$%^&*()_+~`|}{[]\:;?><,./-=';
+  const uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
+  const numberChars = "0123456789";
+  const specialChars = "!@#$%^&*()_+~`|}{[]\:;?><,./-=";
 
   const allChars = uppercaseChars + lowercaseChars + numberChars + specialChars;
 
-  let password = '';
+  let password = "";
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * allChars.length);
     password += allChars[randomIndex];
@@ -80,31 +80,31 @@ export const createUser = async ({
 
   const adminCreateUserCommand = new AdminCreateUserCommand({
     UserPoolId: userPoolId,
-    MessageAction: 'SUPPRESS', // don't send email to the user
+    MessageAction: "SUPPRESS", // don't send email to the user
     Username: email,
     UserAttributes: [
       {
-        Name: 'given_name',
+        Name: "given_name",
         Value: givenName,
       },
       {
-        Name: 'family_name',
+        Name: "family_name",
         Value: familyName,
       },
       {
-        Name: 'email',
+        Name: "email",
         Value: email,
       },
       {
-        Name: 'email_verified',
-        Value: 'true',
+        Name: "email_verified",
+        Value: "true",
       },
       {
-        Name: 'custom:subscriptionStatus',
+        Name: "custom:subscriptionStatus",
         Value: subscriptionStatus.toString(),
       },
       {
-        Name: 'custom:role',
+        Name: "custom:role",
         Value: userRole.toString(),
       },
     ],
@@ -115,11 +115,11 @@ export const createUser = async ({
       adminCreateUserCommand,
     );
 
-    await addUserToGroup(userPoolId, User?.Username!, 'USERS');
+    await addUserToGroup(userPoolId, User?.Username!, "USERS");
 
     return User;
   } catch (error) {
-    console.error('Error creating user: ', error);
+    console.error("Error creating user: ", error);
     return;
   }
 };
@@ -153,12 +153,12 @@ export const linkSocialAccount = async ({
   const linkProviderForUserCommand = new AdminLinkProviderForUserCommand({
     UserPoolId: userPoolId,
     DestinationUser: {
-      ProviderName: 'Cognito', // Cognito is the default provider
+      ProviderName: "Cognito", // Cognito is the default provider
       ProviderAttributeValue: cognitoUsername, // this is the username of the user
     },
     SourceUser: {
       ProviderName: providerName, // Google or Facebook (first letter capitalized)
-      ProviderAttributeName: 'Cognito_Subject', // Cognito_Subject is the default attribute name
+      ProviderAttributeName: "Cognito_Subject", // Cognito_Subject is the default attribute name
       ProviderAttributeValue: providerUserId, // this is the value of the provider
     },
   });

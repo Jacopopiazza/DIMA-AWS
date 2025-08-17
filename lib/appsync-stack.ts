@@ -1,12 +1,12 @@
-import * as cdk from 'aws-cdk-lib';
-import * as appsync from 'aws-cdk-lib/aws-appsync';
-import * as cognito from 'aws-cdk-lib/aws-cognito';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as logs from 'aws-cdk-lib/aws-logs';
-import { Construct } from 'constructs';
-import { NodejsFunction, OutputFormat } from 'aws-cdk-lib/aws-lambda-nodejs';
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as cdk from "aws-cdk-lib";
+import * as appsync from "aws-cdk-lib/aws-appsync";
+import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as logs from "aws-cdk-lib/aws-logs";
+import { Construct } from "constructs";
+import { NodejsFunction, OutputFormat } from "aws-cdk-lib/aws-lambda-nodejs";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 interface AppSyncApiStackProps extends cdk.StackProps {
   userPool: cognito.UserPool;
@@ -21,9 +21,9 @@ export class AppSyncApiStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create the AppSync API using your comprehensive GraphQL schema
-    const api = new appsync.GraphqlApi(this, 'MealPlanningApi', {
-      name: 'MealPlanningApi',
-      definition: appsync.Definition.fromFile('graphql/schema.graphql'),
+    const api = new appsync.GraphqlApi(this, "MealPlanningApi", {
+      name: "MealPlanningApi",
+      definition: appsync.Definition.fromFile("graphql/schema.graphql"),
       authorizationConfig: {
         defaultAuthorization: {
           authorizationType: appsync.AuthorizationType.USER_POOL,
@@ -48,7 +48,7 @@ export class AppSyncApiStack extends cdk.Stack {
 
     // Add DynamoDB table as a data source
     const tableDS = api.addDynamoDbDataSource(
-      'MealPlanningDynamoDataSource',
+      "MealPlanningDynamoDataSource",
       props.mealPlanningTable,
     );
 
@@ -57,14 +57,14 @@ export class AppSyncApiStack extends cdk.Stack {
     // --------------------------------------------------------------------
 
     // Resolver for Query.getUserDetails
-    tableDS.createResolver('QueryGetUserDetailsResolver', {
-      typeName: 'Query',
-      fieldName: 'getUserDetails',
+    tableDS.createResolver("QueryGetUserDetailsResolver", {
+      typeName: "Query",
+      fieldName: "getUserDetails",
       requestMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/getUserDetails-request.vtl',
+        "vtl-templates/getUserDetails-request.vtl",
       ),
       responseMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/getUserDetails-response.vtl',
+        "vtl-templates/getUserDetails-response.vtl",
       ),
     });
 
@@ -75,16 +75,16 @@ export class AppSyncApiStack extends cdk.Stack {
     // --- Pipeline Function 1: Get UserDetails (to find active plan ID) ---
     const getUserDetailsFunc = new appsync.AppsyncFunction(
       this,
-      'GetUserDetailsFunc',
+      "GetUserDetailsFunc",
       {
-        name: 'getUserDetailsFunc',
+        name: "getUserDetailsFunc",
         api: api,
         dataSource: tableDS,
         requestMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/pipeline.getTodaysPlanAndStatus.func1-getUserDetails-request.vtl',
+          "vtl-templates/pipeline.getTodaysPlanAndStatus.func1-getUserDetails-request.vtl",
         ),
         responseMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/pipeline.getTodaysPlanAndStatus.func1-getUserDetails-response.vtl',
+          "vtl-templates/pipeline.getTodaysPlanAndStatus.func1-getUserDetails-response.vtl",
         ),
       },
     );
@@ -92,16 +92,16 @@ export class AppSyncApiStack extends cdk.Stack {
     // --- Pipeline Function 2: Get Active MealPlan ---
     const getActiveMealPlanFunc = new appsync.AppsyncFunction(
       this,
-      'GetActiveMealPlanFunc',
+      "GetActiveMealPlanFunc",
       {
-        name: 'getActiveMealPlanFunc',
+        name: "getActiveMealPlanFunc",
         api: api,
         dataSource: tableDS,
         requestMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/pipeline.getTodaysPlanAndStatus.func2-getMealPlan-request.vtl',
+          "vtl-templates/pipeline.getTodaysPlanAndStatus.func2-getMealPlan-request.vtl",
         ),
         responseMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/pipeline.getTodaysPlanAndStatus.func2-getMealPlan-response.vtl',
+          "vtl-templates/pipeline.getTodaysPlanAndStatus.func2-getMealPlan-response.vtl",
         ),
       },
     );
@@ -109,25 +109,25 @@ export class AppSyncApiStack extends cdk.Stack {
     // --- Pipeline Function 3: Get Today's Completed Meal Log ---
     const getCompletedLogFunc = new appsync.AppsyncFunction(
       this,
-      'GetCompletedLogFunc',
+      "GetCompletedLogFunc",
       {
-        name: 'getCompletedLogFunc',
+        name: "getCompletedLogFunc",
         api: api,
         dataSource: tableDS,
         requestMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/pipeline.getTodaysPlanAndStatus.func3-getCompletedLog-request.vtl',
+          "vtl-templates/pipeline.getTodaysPlanAndStatus.func3-getCompletedLog-request.vtl",
         ),
         responseMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/pipeline.getTodaysPlanAndStatus.func3-getCompletedLog-response.vtl',
+          "vtl-templates/pipeline.getTodaysPlanAndStatus.func3-getCompletedLog-response.vtl",
         ),
       },
     );
 
     // --- Pipeline Resolver Definition ---
-    new appsync.Resolver(this, 'PipelineGetTodaysPlanAndStatusResolver', {
+    new appsync.Resolver(this, "PipelineGetTodaysPlanAndStatusResolver", {
       api: api,
-      typeName: 'Query',
-      fieldName: 'getTodaysPlanAndStatus',
+      typeName: "Query",
+      fieldName: "getTodaysPlanAndStatus",
       // Define the sequence of functions
       pipelineConfig: [
         getUserDetailsFunc,
@@ -135,24 +135,24 @@ export class AppSyncApiStack extends cdk.Stack {
         getCompletedLogFunc,
       ],
       // Request mapping template for the pipeline resolver itself (usually simple)
-      requestMappingTemplate: appsync.MappingTemplate.fromString('{}'),
+      requestMappingTemplate: appsync.MappingTemplate.fromString("{}"),
       // Response mapping template - combines results from the functions
       responseMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/pipeline.getTodaysPlanAndStatus-response.vtl',
+        "vtl-templates/pipeline.getTodaysPlanAndStatus-response.vtl",
       ),
     });
 
     // ====================================================================
     //         PIPELINE RESOLVER for Query.getActiveMealPlan
     // ====================================================================
-    new appsync.Resolver(this, 'PipelineGetActiveMealPlanResolver', {
+    new appsync.Resolver(this, "PipelineGetActiveMealPlanResolver", {
       api: api,
-      typeName: 'Query',
-      fieldName: 'getActiveMealPlan',
+      typeName: "Query",
+      fieldName: "getActiveMealPlan",
       pipelineConfig: [getUserDetailsFunc, getActiveMealPlanFunc],
-      requestMappingTemplate: appsync.MappingTemplate.fromString('{}'),
+      requestMappingTemplate: appsync.MappingTemplate.fromString("{}"),
       responseMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/pipeline.getActiveMealPlan-response.vtl',
+        "vtl-templates/pipeline.getActiveMealPlan-response.vtl",
       ),
     });
 
@@ -161,46 +161,46 @@ export class AppSyncApiStack extends cdk.Stack {
     // ====================================================================
     const updateUserDetailsFunction = new appsync.AppsyncFunction(
       this,
-      'UpdateUserDetailsFunctionForUserDetails',
+      "UpdateUserDetailsFunctionForUserDetails",
       {
         api,
-        name: 'UpdateUserDetailsFunctionForUserDetails',
+        name: "UpdateUserDetailsFunctionForUserDetails",
         dataSource: tableDS,
         runtime: appsync.FunctionRuntime.JS_1_0_0,
         code: appsync.Code.fromAsset(
-          'vtl-templates/pipeline.updateUserDetails.UpdateUserDetails.js',
+          "vtl-templates/pipeline.updateUserDetails.UpdateUserDetails.js",
         ),
       },
     );
 
     const getUserDetailsFunction = new appsync.AppsyncFunction(
       this,
-      'GetUserDetailsFunctionForUserDetails',
+      "GetUserDetailsFunctionForUserDetails",
       {
         api,
-        name: 'GetUserDetailsFunction',
+        name: "GetUserDetailsFunction",
         dataSource: tableDS,
         requestMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/getUserDetails-request.vtl',
+          "vtl-templates/getUserDetails-request.vtl",
         ),
         responseMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/getUserDetails-response.vtl',
+          "vtl-templates/getUserDetails-response.vtl",
         ),
       },
     );
 
     const pipelineResolver = new appsync.Resolver(
       this,
-      'MutationUpdateUserDetailsResolver',
+      "MutationUpdateUserDetailsResolver",
       {
         api,
-        typeName: 'Mutation',
-        fieldName: 'updateUserDetails',
+        typeName: "Mutation",
+        fieldName: "updateUserDetails",
         pipelineConfig: [updateUserDetailsFunction, getUserDetailsFunction],
         requestMappingTemplate:
-          appsync.MappingTemplate.fromString('$util.toJson({})'), // <-- ADD THIS
+          appsync.MappingTemplate.fromString("$util.toJson({})"), // <-- ADD THIS
         responseMappingTemplate: appsync.MappingTemplate.fromFile(
-          'vtl-templates/pipeline.updateUserDetails-response.vtl',
+          "vtl-templates/pipeline.updateUserDetails-response.vtl",
         ),
       },
     );
@@ -213,11 +213,11 @@ export class AppSyncApiStack extends cdk.Stack {
     // --- Lambda Data Source for setActiveMealPlan ---
     const setActiveMealPlanLambda = new lambda.Function(
       this,
-      'SetActiveMealPlanLambda',
+      "SetActiveMealPlanLambda",
       {
         runtime: lambda.Runtime.NODEJS_22_X,
-        handler: 'index.handler',
-        code: lambda.Code.fromAsset('src/lambda/setActiveMealPlan'),
+        handler: "index.handler",
+        code: lambda.Code.fromAsset("src/lambda/setActiveMealPlan"),
         environment: {
           TABLE_NAME: props.mealPlanningTable.tableName,
         },
@@ -227,175 +227,175 @@ export class AppSyncApiStack extends cdk.Stack {
     props.mealPlanningTable.grantReadWriteData(setActiveMealPlanLambda);
 
     const setActiveMealPlanLambdaDS = api.addLambdaDataSource(
-      'SetActiveMealPlanLambdaDS',
+      "SetActiveMealPlanLambdaDS",
       setActiveMealPlanLambda,
     );
 
     setActiveMealPlanLambdaDS.createResolver(
-      'MutationSetActiveMealPlanResolver',
+      "MutationSetActiveMealPlanResolver",
       {
-        typeName: 'Mutation',
-        fieldName: 'setActiveMealPlan',
+        typeName: "Mutation",
+        fieldName: "setActiveMealPlan",
       },
     );
 
-    tableDS.createResolver('MutationMarkMealAsCompletedResolver', {
-      typeName: 'Mutation',
-      fieldName: 'markMealAsCompleted',
+    tableDS.createResolver("MutationMarkMealAsCompletedResolver", {
+      typeName: "Mutation",
+      fieldName: "markMealAsCompleted",
       requestMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/mutation.markMealAsCompleted-request.vtl',
+        "vtl-templates/mutation.markMealAsCompleted-request.vtl",
       ), // Ensure this file exists and has the Set logic
       responseMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/mutation.markMealAsCompleted-response.vtl',
+        "vtl-templates/mutation.markMealAsCompleted-response.vtl",
       ),
     });
 
     // --- Add Resolver for Unmark Meal ---
-    tableDS.createResolver('MutationUnmarkMealAsCompletedResolver', {
+    tableDS.createResolver("MutationUnmarkMealAsCompletedResolver", {
       // New Resolver definition
-      typeName: 'Mutation',
-      fieldName: 'unmarkMealAsCompleted', // New field name from updated schema
+      typeName: "Mutation",
+      fieldName: "unmarkMealAsCompleted", // New field name from updated schema
       requestMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/mutation.unmarkMealAsCompleted-request.vtl',
+        "vtl-templates/mutation.unmarkMealAsCompleted-request.vtl",
       ), // New VTL file
       responseMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/mutation.unmarkMealAsCompleted-response.vtl',
+        "vtl-templates/mutation.unmarkMealAsCompleted-response.vtl",
       ), // New VTL file
     });
 
     // --- Resolver for Mutation.createMealPlan ---
-    tableDS.createResolver('MutationCreateMealPlanResolver', {
-      typeName: 'Mutation',
-      fieldName: 'createMealPlan',
+    tableDS.createResolver("MutationCreateMealPlanResolver", {
+      typeName: "Mutation",
+      fieldName: "createMealPlan",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
-      code: appsync.Code.fromAsset('vtl-templates/mutation.createMealPlan.js'),
+      code: appsync.Code.fromAsset("vtl-templates/mutation.createMealPlan.js"),
     });
 
     // --- Resolver for Mutation.deleteMealPlan ---
-    tableDS.createResolver('MutationDeleteMealPlanResolver', {
-      typeName: 'Mutation',
-      fieldName: 'deleteMealPlan',
+    tableDS.createResolver("MutationDeleteMealPlanResolver", {
+      typeName: "Mutation",
+      fieldName: "deleteMealPlan",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
-      code: appsync.Code.fromAsset('vtl-templates/mutation.deleteMealPlan.js'),
+      code: appsync.Code.fromAsset("vtl-templates/mutation.deleteMealPlan.js"),
     });
 
     // --- Resolver for Mutation.modifyMealPlan ---
-    tableDS.createResolver('MutationModifyMealPlanResolver', {
-      typeName: 'Mutation',
-      fieldName: 'modifyMealPlan',
+    tableDS.createResolver("MutationModifyMealPlanResolver", {
+      typeName: "Mutation",
+      fieldName: "modifyMealPlan",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
-      code: appsync.Code.fromAsset('vtl-templates/mutation.modifyMealPlan.js'),
+      code: appsync.Code.fromAsset("vtl-templates/mutation.modifyMealPlan.js"),
     });
 
     // --- Pipeline Functions for validateMealPlan ---
     const getMealPlanKeysByMealPlanIdFunc = new appsync.AppsyncFunction(
       this,
-      'GetMealPlanKeysByMealPlanIdFunc',
+      "GetMealPlanKeysByMealPlanIdFunc",
       {
-        name: 'getMealPlanKeysByMealPlanIdFunc',
+        name: "getMealPlanKeysByMealPlanIdFunc",
         api: api,
         dataSource: tableDS,
         runtime: appsync.FunctionRuntime.JS_1_0_0,
         code: appsync.Code.fromAsset(
-          'vtl-templates/getMealPlanKeysByMealPlanId.js',
+          "vtl-templates/getMealPlanKeysByMealPlanId.js",
         ),
       },
     );
 
     const updateMealPlanValidationStatusFunc = new appsync.AppsyncFunction(
       this,
-      'UpdateMealPlanValidationStatusFunc',
+      "UpdateMealPlanValidationStatusFunc",
       {
-        name: 'updateMealPlanValidationStatusFunc',
+        name: "updateMealPlanValidationStatusFunc",
         api: api,
         dataSource: tableDS,
         runtime: appsync.FunctionRuntime.JS_1_0_0,
         code: appsync.Code.fromAsset(
-          'vtl-templates/updateMealPlanValidationStatus.js',
+          "vtl-templates/updateMealPlanValidationStatus.js",
         ),
       },
     );
 
     // --- Pipeline Resolver for Mutation.validateMealPlan ---
-    new appsync.Resolver(this, 'PipelineValidateMealPlanResolver', {
+    new appsync.Resolver(this, "PipelineValidateMealPlanResolver", {
       api: api,
-      typeName: 'Mutation',
-      fieldName: 'validateMealPlan',
+      typeName: "Mutation",
+      fieldName: "validateMealPlan",
       pipelineConfig: [
         getMealPlanKeysByMealPlanIdFunc,
         updateMealPlanValidationStatusFunc,
       ],
-      requestMappingTemplate: appsync.MappingTemplate.fromString('{}'),
+      requestMappingTemplate: appsync.MappingTemplate.fromString("{}"),
       responseMappingTemplate: appsync.MappingTemplate.fromString(
-        '$util.toJson($ctx.prev.result)',
+        "$util.toJson($ctx.prev.result)",
       ),
     });
 
     // --- Resolver for Query.listMyMealPlans ---
-    tableDS.createResolver('QueryListMyMealPlansResolver', {
-      typeName: 'Query',
-      fieldName: 'listMyMealPlans',
+    tableDS.createResolver("QueryListMyMealPlansResolver", {
+      typeName: "Query",
+      fieldName: "listMyMealPlans",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
-      code: appsync.Code.fromAsset('vtl-templates/query.listMyMealPlans.js'),
+      code: appsync.Code.fromAsset("vtl-templates/query.listMyMealPlans.js"),
     });
 
     // --- Resolver for Query.getMealPlanById ---
-    tableDS.createResolver('QueryGetMealPlanByIdResolver', {
-      typeName: 'Query',
-      fieldName: 'getMealPlanById',
+    tableDS.createResolver("QueryGetMealPlanByIdResolver", {
+      typeName: "Query",
+      fieldName: "getMealPlanById",
       requestMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/query.getMealPlanById-request.vtl',
+        "vtl-templates/query.getMealPlanById-request.vtl",
       ),
       responseMappingTemplate: appsync.MappingTemplate.fromFile(
-        'vtl-templates/query.getMealPlanById-response.vtl',
+        "vtl-templates/query.getMealPlanById-response.vtl",
       ),
     });
 
     // --- Resolver for Query.listNutritionists ---
-    tableDS.createResolver('QueryListNutritionistsResolverNew', {
-      typeName: 'Query',
-      fieldName: 'listNutritionists',
+    tableDS.createResolver("QueryListNutritionistsResolverNew", {
+      typeName: "Query",
+      fieldName: "listNutritionists",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
-      code: appsync.Code.fromAsset('vtl-templates/query.listNutritionists.js'),
+      code: appsync.Code.fromAsset("vtl-templates/query.listNutritionists.js"),
     });
 
     // --- Resolver for Mutation.requestValidation ---
-    tableDS.createResolver('MutationRequestValidationResolver', {
-      typeName: 'Mutation',
-      fieldName: 'requestValidation',
+    tableDS.createResolver("MutationRequestValidationResolver", {
+      typeName: "Mutation",
+      fieldName: "requestValidation",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
       code: appsync.Code.fromAsset(
-        'vtl-templates/mutation.requestValidation.js',
+        "vtl-templates/mutation.requestValidation.js",
       ),
     });
 
     // --- Resolver for Query.listMyAssignedMealPlans ---
-    tableDS.createResolver('QueryListMyAssignedMealPlansResolver', {
-      typeName: 'Query',
-      fieldName: 'listMyAssignedMealPlans',
+    tableDS.createResolver("QueryListMyAssignedMealPlansResolver", {
+      typeName: "Query",
+      fieldName: "listMyAssignedMealPlans",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
       code: appsync.Code.fromAsset(
-        'vtl-templates/query.listMyAssignedMealPlans.js',
+        "vtl-templates/query.listMyAssignedMealPlans.js",
       ),
     });
 
     // --- Resolver for Query.getMyNutritionistProfile ---
-    tableDS.createResolver('QueryGetMyNutritionistProfileResolver', {
-      typeName: 'Query',
-      fieldName: 'getMyNutritionistProfile',
+    tableDS.createResolver("QueryGetMyNutritionistProfileResolver", {
+      typeName: "Query",
+      fieldName: "getMyNutritionistProfile",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
       code: appsync.Code.fromAsset(
-        'vtl-templates/query.getMyNutritionistProfile.js',
+        "vtl-templates/query.getMyNutritionistProfile.js",
       ),
     });
 
     // --- Resolver for Mutation.updateMyNutritionistProfile ---
-    tableDS.createResolver('MutationUpdateMyNutritionistProfileResolver', {
-      typeName: 'Mutation',
-      fieldName: 'updateMyNutritionistProfile',
+    tableDS.createResolver("MutationUpdateMyNutritionistProfileResolver", {
+      typeName: "Mutation",
+      fieldName: "updateMyNutritionistProfile",
       runtime: appsync.FunctionRuntime.JS_1_0_0,
       code: appsync.Code.fromAsset(
-        'vtl-templates/mutation.updateMyNutritionistProfile.js',
+        "vtl-templates/mutation.updateMyNutritionistProfile.js",
       ),
     });
 
@@ -409,16 +409,16 @@ export class AppSyncApiStack extends cdk.Stack {
     // IMPORTANT: Replace 'your/gemini/secret/arn' with the actual ARN of your secret in Secrets Manager
     const geminiApiSecret = secretsmanager.Secret.fromSecretCompleteArn(
       this,
-      'GeminiApiSecret',
-      'arn:aws:secretsmanager:us-west-2:537124974525:secret:GeminiApiSecret-FoYZ9f',
+      "GeminiApiSecret",
+      "arn:aws:secretsmanager:us-west-2:537124974525:secret:GeminiApiSecret-FoYZ9f",
     );
 
     // --- 2. Define the Asynchronous Generator Lambda ---
-    const generatorLambda = new NodejsFunction(this, 'GeneratorHandler', {
-      functionName: 'meal-plan-generator-handler',
+    const generatorLambda = new NodejsFunction(this, "GeneratorHandler", {
+      functionName: "meal-plan-generator-handler",
       runtime: lambda.Runtime.NODEJS_22_X,
-      handler: 'handler',
-      entry: 'src/lambda/meal-generator-generation-handler/index.ts',
+      handler: "handler",
+      entry: "src/lambda/meal-generator-generation-handler/index.ts",
       timeout: cdk.Duration.minutes(5),
       memorySize: 512,
       bundling: {
@@ -427,9 +427,9 @@ export class AppSyncApiStack extends cdk.Stack {
         minify: false, // Minify the code
         sourceMap: true, // Generate source maps
         externalModules: [
-          '@aws-sdk/client-secrets-manager',
-          '@aws-sdk/signature-v4',
-          '@aws-sdk/protocol-http',
+          "@aws-sdk/client-secrets-manager",
+          "@aws-sdk/signature-v4",
+          "@aws-sdk/protocol-http",
         ],
       },
       environment: {
@@ -447,11 +447,11 @@ export class AppSyncApiStack extends cdk.Stack {
     props.mealPlanningTable.grantReadWriteData(generatorLambda);
 
     // --- 3. Define the Synchronous Request Handler Lambda ---
-    const requestLambda = new NodejsFunction(this, 'RequestHandler', {
-      functionName: 'meal-plan-request-handler',
+    const requestLambda = new NodejsFunction(this, "RequestHandler", {
+      functionName: "meal-plan-request-handler",
       runtime: lambda.Runtime.NODEJS_22_X,
-      handler: 'handler',
-      entry: 'src/lambda/meal-generation-request-handler/index.ts', // Adjust path as needed
+      handler: "handler",
+      entry: "src/lambda/meal-generation-request-handler/index.ts", // Adjust path as needed
       timeout: cdk.Duration.seconds(30),
       environment: {
         MEALPLANS_TABLE_NAME: props.mealPlanningTable.tableName,
@@ -463,9 +463,9 @@ export class AppSyncApiStack extends cdk.Stack {
         minify: false, // Minify the code
         sourceMap: true, // Generate source maps
         externalModules: [
-          '@aws-sdk/client-dynamodb',
-          '@aws-sdk/lib-dynamodb',
-          '@aws-sdk/client-lambda',
+          "@aws-sdk/client-dynamodb",
+          "@aws-sdk/lib-dynamodb",
+          "@aws-sdk/client-lambda",
         ],
       },
     });
@@ -479,14 +479,14 @@ export class AppSyncApiStack extends cdk.Stack {
     // --- 4. Create the AppSync Data Source and Resolver ---
     // Create a Lambda Data Source for the request handler
     const requestLambdaDS = api.addLambdaDataSource(
-      'RequestLambdaDataSource',
+      "RequestLambdaDataSource",
       requestLambda,
     );
 
     // Create the resolver for the `requestNewMealPlan` mutation
-    requestLambdaDS.createResolver('RequestNewMealPlanResolver', {
-      typeName: 'Mutation',
-      fieldName: 'requestNewMealPlan',
+    requestLambdaDS.createResolver("RequestNewMealPlanResolver", {
+      typeName: "Mutation",
+      fieldName: "requestNewMealPlan",
     });
 
     // --- End of Meal Plan Generation Section ---
@@ -500,13 +500,13 @@ export class AppSyncApiStack extends cdk.Stack {
     this.apiId = api.apiId;
 
     // Outputs
-    new cdk.CfnOutput(this, 'GraphQLAPIURL', {
+    new cdk.CfnOutput(this, "GraphQLAPIURL", {
       value: api.graphqlUrl,
-      description: 'The URL of the GraphQL API',
+      description: "The URL of the GraphQL API",
     });
-    new cdk.CfnOutput(this, 'GraphQLAPIId', {
+    new cdk.CfnOutput(this, "GraphQLAPIId", {
       value: api.apiId,
-      description: 'The ID of the GraphQL API',
+      description: "The ID of the GraphQL API",
     });
     // Region output removed to avoid TypeScript compilation issues
   }

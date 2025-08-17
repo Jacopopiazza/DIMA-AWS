@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import * as cdk from 'aws-cdk-lib';
-import { AppSyncApiStack } from '../lib/appsync-stack';
-import { AuthStack } from '../lib/auth-stack';
-import { DataStack } from '../lib/data-stack';
+import * as cdk from "aws-cdk-lib";
+import { AppSyncApiStack } from "../lib/appsync-stack";
+import { AuthStack } from "../lib/auth-stack";
+import { DataStack } from "../lib/data-stack";
 
 const app = new cdk.App();
 
-const authStack = new AuthStack(app, 'AuthStack', {
+const authStack = new AuthStack(app, "AuthStack", {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
@@ -17,21 +17,21 @@ const authStack = new AuthStack(app, 'AuthStack', {
 
   /* Uncomment the next line if you know exactly what Account and Region you
    * want to deploy the stack to. */
-  env: { account: '537124974525', region: 'us-west-2' },
+  env: { account: "537124974525", region: "us-west-2" },
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
 
 // Create the DataStack for your DynamoDB table.
-const dataStack = new DataStack(app, 'DataStack', {
+const dataStack = new DataStack(app, "DataStack", {
   userPool: authStack.userPool,
-  env: { account: '537124974525', region: 'us-west-2' },
+  env: { account: "537124974525", region: "us-west-2" },
   // additional properties if needed
 });
 
 // Create the AppSync API stack, passing in references to the User Pool and DynamoDB table.
-new AppSyncApiStack(app, 'AppSyncApiStack', {
+new AppSyncApiStack(app, "AppSyncApiStack", {
   userPool: authStack.userPool,
   mealPlanningTable: dataStack.mealPlanningTable,
-  env: { account: '537124974525', region: 'us-west-2' },
+  env: { account: "537124974525", region: "us-west-2" },
 });

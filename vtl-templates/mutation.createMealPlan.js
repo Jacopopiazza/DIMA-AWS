@@ -1,5 +1,5 @@
 // AppSync JS pipeline function for createMealPlan (simplified: last created meal is active)
-import { util } from '@aws-appsync/utils';
+import { util } from "@aws-appsync/utils";
 
 /**
  * Creates a meal plan in DynamoDB with proper user authentication and data formatting.
@@ -20,13 +20,13 @@ export function request(ctx) {
 
   // Ensure all days are present as arrays (even if empty)
   const weekDays = [
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-    'sunday',
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
   ];
   const dailyPlan = {};
   for (const day of weekDays) {
@@ -44,18 +44,18 @@ export function request(ctx) {
     mealPlanId: planId,
     PK: pk,
     SK: sk,
-    entityType: 'MEAL_PLAN',
+    entityType: "MEAL_PLAN",
     createdAt: now,
     updatedAt: now,
-    status: 'GENERATED',
+    status: "GENERATED",
   };
 
   return {
-    operation: 'PutItem',
+    operation: "PutItem",
     key: util.dynamodb.toMapValues({ PK: pk, SK: sk }),
     attributeValues: util.dynamodb.toMapValues(itemData),
     condition: {
-      expression: 'attribute_not_exists(PK) AND attribute_not_exists(SK)',
+      expression: "attribute_not_exists(PK) AND attribute_not_exists(SK)",
     },
   };
 }
@@ -72,7 +72,7 @@ export function response(ctx) {
 
   return {
     success: true,
-    message: 'Meal plan created successfully.',
+    message: "Meal plan created successfully.",
     mealPlanId: ctx.result.mealPlanId,
   };
 }

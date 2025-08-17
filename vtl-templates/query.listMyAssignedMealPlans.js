@@ -4,12 +4,12 @@ export function request(ctx) {
   const nutritionistId = ctx.identity.sub;
 
   return {
-    operation: 'Query',
-    index: 'GSI_AssignedNutritionistId',
+    operation: "Query",
+    index: "GSI_AssignedNutritionistId",
     query: {
-      expression: 'assignedNutritionistId = :nid',
+      expression: "assignedNutritionistId = :nid",
       expressionValues: {
-        ':nid': { S: nutritionistId },
+        ":nid": { S: nutritionistId },
       },
     },
   };
@@ -23,8 +23,8 @@ export function response(ctx) {
   // Map only the fields defined in the MealPlan GraphQL type
   const mappedItems = items.map((plan) => {
     let userId = plan.userId;
-    if (!userId && plan.PK && plan.PK.startsWith('USER#')) {
-      userId = plan.PK.replace('USER#', '');
+    if (!userId && plan.PK && plan.PK.startsWith("USER#")) {
+      userId = plan.PK.replace("USER#", "");
     }
     return {
       id: plan.mealPlanId, // Set id to mealPlanId for codegen compatibility
@@ -44,7 +44,7 @@ export function response(ctx) {
 
   // Filter to only include meal plans that need validation (PENDING_REVIEW status)
   const pendingPlans = mappedItems.filter(
-    (plan) => plan.validationStatus === 'PENDING_REVIEW',
+    (plan) => plan.validationStatus === "PENDING_REVIEW",
   );
 
   return {

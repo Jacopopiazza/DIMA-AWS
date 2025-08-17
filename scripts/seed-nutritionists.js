@@ -1,15 +1,15 @@
 const {
   CognitoIdentityProviderClient,
   ListUsersInGroupCommand,
-} = require('@aws-sdk/client-cognito-identity-provider');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
+} = require("@aws-sdk/client-cognito-identity-provider");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
 
 // Update these with your actual values
-const USER_POOL_ID = 'us-west-2_fQpGATfnW'; // <-- update if needed
-const REGION = 'us-west-2';
-const TABLE_NAME = 'MealPlanningTable';
-const NUTRITIONISTS_GROUP = 'NUTRITIONISTS';
+const USER_POOL_ID = "us-west-2_fQpGATfnW"; // <-- update if needed
+const REGION = "us-west-2";
+const TABLE_NAME = "MealPlanningTable";
+const NUTRITIONISTS_GROUP = "NUTRITIONISTS";
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: REGION });
 const dynamoClient = new DynamoDBClient({ region: REGION });
@@ -36,28 +36,28 @@ function buildProfileFromCognitoUser(user) {
   // You can customize these fields as needed
   const attr = (name) => {
     const found = user.Attributes.find((a) => a.Name === name);
-    return found ? found.Value : '';
+    return found ? found.Value : "";
   };
   return {
     PK: `NUTR#${user.Username}`,
-    SK: 'NUTR_DETAILS',
+    SK: "NUTR_DETAILS",
     NutritionistID: user.Username,
-    GivenName: attr('given_name'),
-    FamilyName: attr('family_name'),
-    Specialization: 'General Nutrition',
-    Bio: 'Certified nutritionist helping clients achieve their health goals.',
-    ProfilePictureURL: attr('profilePicture'),
+    GivenName: attr("given_name"),
+    FamilyName: attr("family_name"),
+    Specialization: "General Nutrition",
+    Bio: "Certified nutritionist helping clients achieve their health goals.",
+    ProfilePictureURL: attr("profilePicture"),
     IsAvailable: true,
-    GSI1PK: 'NUTR_PROFILES_ALL',
+    GSI1PK: "NUTR_PROFILES_ALL",
     GSI1SK: `NUTRID#${user.Username}`,
   };
 }
 
 async function seedNutritionists() {
-  console.log('Fetching nutritionists from Cognito...');
+  console.log("Fetching nutritionists from Cognito...");
   const users = await getNutritionistsFromCognito();
   if (!users.length) {
-    console.log('No nutritionists found in Cognito group.');
+    console.log("No nutritionists found in Cognito group.");
     return;
   }
   console.log(`Found ${users.length} nutritionists. Seeding DynamoDB...`);
@@ -93,7 +93,7 @@ async function seedNutritionists() {
   );
   if (failureCount > 0) {
     console.log(
-      'Failed items:',
+      "Failed items:",
       results.filter((r) => !r.success),
     );
   }
