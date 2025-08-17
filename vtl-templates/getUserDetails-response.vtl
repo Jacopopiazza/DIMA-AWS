@@ -1,0 +1,42 @@
+## vtl-templates/getUserDetails-response.vtl (SHARED)
+
+#if($ctx.error)
+  $util.error($ctx.error.message, $ctx.error.type)
+#end
+
+#if(!$ctx.result)
+  ## Item not found in DynamoDB.
+  #set($responseObject = {})
+  ## Use the userId that was determined in the request template and stashed ($ctx.identity.sub).
+  $util.qr($responseObject.put("userId", $ctx.stash.resolvedUserId))
+
+  ## Set other fields to null as before
+  $util.qr($responseObject.put("activeMealPlanId", $null))
+  $util.qr($responseObject.put("allergies", $null))
+  $util.qr($responseObject.put("dailyMealsPreference", $null))
+  $util.qr($responseObject.put("dietaryRestrictions", $null))
+  $util.qr($responseObject.put("exerciseFrequency", $null))
+  $util.qr($responseObject.put("heightCm", $null))
+  $util.qr($responseObject.put("openTextPreferences", $null))
+  $util.qr($responseObject.put("targetCalories", $null))
+  $util.qr($responseObject.put("updatedAt", $null))
+  $util.qr($responseObject.put("weightKg", $null))
+
+  $util.toJson($responseObject)
+#else
+  ## Item was found in DynamoDB.
+  ## Ensure the top-level 'userId' field (as per your GraphQL schema) is populated.
+  ## This uses the stashed resolvedUserId ($ctx.identity.sub) if not directly present in the DDB item.
+  #if (!$ctx.result.userId && $ctx.stash.resolvedUserId)
+      $util.qr($ctx.result.put("userId", $ctx.stash.resolvedUserId))
+  #end
+  ## If your DDB PK attribute (e.g., 'PK') stores 'USER#<id>' and you need to derive it explicitly:
+  #if ($ctx.result.PK && !$ctx.result.userId)
+      #set($pkParts = $ctx.result.PK.split("#"))
+      #if($pkParts.size() > 1)
+          $util.qr($ctx.result.put("userId", $pkParts[1]))
+      #end
+  #end
+
+  $util.toJson($ctx.result)
+#end

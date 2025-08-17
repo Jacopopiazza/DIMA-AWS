@@ -1,0 +1,27 @@
+## Query: getMealPlanById(mealPlanId: ID!)
+## Action: Fetch a specific meal plan by ID and verify ownership
+
+#set($userId = $ctx.identity.sub)
+#if(!$userId || $userId == "")
+  $util.unauthorized()
+#end
+
+#set($mealPlanId = $ctx.args.mealPlanId)
+
+#if(!$mealPlanId || $mealPlanId == "")
+    $util.error("mealPlanId is required.", "ValidationException")
+#end
+
+## Construct the primary key for the meal plan
+## Meal plans are stored with PK = "USER#userId" and SK = "PLAN#mealPlanId"
+#set($pk = "USER#" + $userId)
+#set($sk = "PLAN#" + $mealPlanId)
+
+{
+  "version": "2018-05-29",
+  "operation": "GetItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($pk),
+    "SK": $util.dynamodb.toDynamoDBJson($sk)
+  }
+} 

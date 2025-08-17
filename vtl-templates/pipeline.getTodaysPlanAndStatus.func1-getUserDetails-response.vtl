@@ -1,0 +1,21 @@
+#if($ctx.error)
+  $util.error($ctx.error.message, $ctx.error.type)
+#end
+#if(!$ctx.result)
+  $util.error("UserDetailsNotFound: No details found for user.", "NotFound")
+#end
+## Put the UserDetails result in the stash for the next function
+$ctx.stash.userDetails = $ctx.result
+
+## Stash today's date and weekday key for subsequent functions
+#set($utils = $util.time)
+#set($nowISO = $utils.nowISO8601())
+$ctx.stash.todayDate = $nowISO.substring(0,10) ## YYYY-MM-DD
+
+#set($epochMillis = $utils.parseISO8601ToEpochMillis($nowISO))
+#set($timezone = "UTC") ## Or your preferred timezone if dates aren't always UTC
+#set($locale = "en-US") ## For day name formatting
+#set($dayName = $utils.epochMillisToFormatted($epochMillis, "EEEE", $locale, $timezone).toLowerCase())
+$ctx.stash.todayWeekdayKey = $dayName ## e.g., "monday", "tuesday"
+
+$util.toJson($ctx.result) ## Return result for pipeline chaining if needed

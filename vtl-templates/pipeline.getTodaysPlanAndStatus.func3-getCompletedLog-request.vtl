@@ -1,0 +1,25 @@
+## Pipeline Function 3: Get Today's PlanDayCompletion item for the active plan
+## Action: Fetch PDC#{activePlanId}#{todayDate} item
+
+#set($userId = $ctx.identity.sub) ## Or $ctx.stash.userDetails.userId
+#set($todayDate = $ctx.stash.todayDate) ## From func1 stash
+#set($activePlanId = $ctx.stash.activePlan.mealPlanId) ## From func2 stash
+
+#if(!$activePlanId)
+    ## This case should ideally be caught by func2 if activePlan is null.
+    ## If func2 doesn't error and activePlan is null, then this will fail.
+    ## Defensive check:
+    $util.error("Active plan ID not available in stash for fetching completion log.", "ServerError")
+#end
+
+#set($pk = "USER#" + $userId)
+#set($sk = "PDC#" + $activePlanId + "#" + $todayDate)
+
+{
+  "version": "2018-05-29",
+  "operation": "GetItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($pk),
+    "SK": $util.dynamodb.toDynamoDBJson($sk)
+  }
+}

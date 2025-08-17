@@ -1,0 +1,25 @@
+#### START CONTENT OF mutation.unmarkMealAsCompleted-response.vtl
+#if($ctx.error)
+  #if($ctx.error.type == "ConditionalCheckFailedException")
+    ## This means the PlanDayCompletion item didn't exist.
+    ## The schema expects PlanDayCompletion or null. Let's return null.
+    null
+  #else
+    $util.error($ctx.error.message, $ctx.error.type)
+  #end
+#else
+  ## Result is a PlanDayCompletion item.
+  ## Ensure completedMealNames is returned as a list.
+  #if($ctx.result && $ctx.result.completedMealNames && $ctx.result.completedMealNames.values)
+    #set($completedList = [])
+    #foreach($item in $ctx.result.completedMealNames.values)
+      $util.qr($completedList.add($item))
+    #end
+    $util.qr($ctx.result.put("completedMealNames", $completedList))
+  #elseif($ctx.result && (!$ctx.result.completedMealNames || $ctx.result.completedMealNames.values.isEmpty()))
+    ## If completedMealNames is now an empty set or null.
+    $util.qr($ctx.result.put("completedMealNames", []))
+  #end
+  $util.toJson($ctx.result)
+#end
+#### END CONTENT OF mutation.unmarkMealAsCompleted-response.vtl

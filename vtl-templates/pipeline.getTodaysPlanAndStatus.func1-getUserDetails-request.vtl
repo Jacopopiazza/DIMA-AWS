@@ -1,0 +1,16 @@
+## Pipeline Function 1: Get UserDetails
+## Action: Fetch USER_DETAILS item to get activeMealPlanId
+#set($userId = $ctx.identity.sub)
+#if(!$userId || $userId == "")
+  $util.unauthorized()
+#end
+
+#set($pk = "USER#" + $userId)
+{
+  "version": "2018-05-29",
+  "operation": "GetItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($pk),
+    "SK": $util.dynamodb.toDynamoDBJson("USER_DETAILS")
+  }
+}

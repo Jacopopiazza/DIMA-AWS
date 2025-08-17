@@ -1,0 +1,63 @@
+#### START CONTENT OF mutation.unmarkMealAsCompleted-request.vtl
+## Mutation: unmarkMealAsCompleted(input: UnmarkMealCompletedInput!)
+## Action: Update PlanDayCompletion item, DELETE mealName from completedMealNames set.
+
+#set($userId = $ctx.identity.sub)
+#if(!$userId || $userId == "")
+  $util.unauthorized()
+#end
+
+#set($input = $ctx.args.input)
+#set($mealPlanId = $input.mealPlanId)
+#set($mealName = $input.mealName) ## This is MealNameEnum (e.g., "BREAKFAST")
+#set($date = $input.date) ## Optional date from input
+
+#if(!$mealPlanId || $mealPlanId == "")
+    $util.error("mealPlanId is required.", "ValidationException")
+#end
+#if(!$mealName || $mealName == "")
+    $util.error("mealName is required.", "ValidationException")
+#end
+
+## Determine date to use
+#set($dateToUse = $date)
+#if(!$dateToUse || $dateToUse == "")
+  #set($utils = $util.time)
+  #set($dateToUse = $utils.nowISO8601().substring(0, 10)) ## Defaults to today YYYY-MM-DD
+#end
+
+#set($pk = "USER#" + $userId)
+#set($sk = "PDC#" + $mealPlanId + "#" + $dateToUse)
+
+#set($nowISO = $util.time.nowISO8601())
+
+#set($values = {
+  ":mealNameToUnmark": $util.dynamodb.toStringSet([$mealName]), ## Value for DELETE
+  ":updatedAtValue": $util.dynamodb.toDynamoDB($nowISO)
+})
+
+#set($expressionNames = {
+  "#cmn": "completedMealNames",
+  "#ua": "updatedAt"
+})
+
+#set($updateExpression = "SET #ua = :updatedAtValue DELETE #cmn :mealNameToUnmark")
+
+{
+  "version": "2018-05-29",
+  "operation": "UpdateItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($pk),
+    "SK": $util.dynamodb.toDynamoDBJson($sk)
+  },
+  "update": {
+    "expression": $updateExpression,
+    "expressionNames": $expressionNames,
+    "expressionAttributeValues": $values
+  },
+  "condition": { ## Only attempt if the PlanDayCompletion item exists
+    "expression": "attribute_exists(PK) AND attribute_exists(SK)"
+  },
+  "returnValues": "ALL_NEW" ## Return the updated PlanDayCompletion item
+}
+#### END CONTENT OF mutation.unmarkMealAsCompleted-request.vtl

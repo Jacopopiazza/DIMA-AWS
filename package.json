@@ -1,0 +1,69 @@
+{
+  "name": "dima-2024",
+  "version": "0.1.0",
+  "bin": {
+    "dima-2024": "bin/dima-2024.js"
+  },
+  "scripts": {
+    "build": "npm run format && npm run tsc",
+    "tsc": "tsc",
+    "format": "prettier --write .",
+    "check": "prettier --check .",
+    "test": "jest",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --all",
+    "deploy-appsync": "cdk deploy AppSyncApiStack",
+    "watch": "cdk watch",
+    "diff": "cdk diff",
+    "synth": "cdk synth",
+    "seed-nutritionists": "node scripts/seed-nutritionists.js",
+    "check-appsync-status": "aws appsync get-schema-creation-status --api-id $(aws appsync list-graphql-apis --max-results 1 | jq -r '.graphqlApis[0].apiId')",
+    "update-appsync-schema": "aws appsync start-schema-creation --api-id $(aws appsync list-graphql-apis --max-results 1 | jq -r '.graphqlApis[0].apiId') --definition file://graphql/schema.graphql && npm run check-appsync-status",
+    "codegen": "graphql-codegen --config codegen.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/typescript": "^4.1.6",
+    "@graphql-codegen/typescript-operations": "^4.6.1",
+    "@types/aws-lambda": "^8.10.147",
+    "@types/jest": "^29.5.14",
+    "@types/node": "22.7.9",
+    "@types/node-fetch": "^2.6.12",
+    "esbuild": "^0.25.1",
+    "eslint": "^9.29.0",
+    "globals": "^16.2.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.5.3",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.6.3",
+    "typescript-eslint": "^8.35.0"
+  },
+  "dependencies": {
+    "@aws-crypto/sha256-js": "^5.2.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.768.0",
+    "@aws-sdk/client-dynamodb": "^3.768.0",
+    "@aws-sdk/client-lambda": "^3.848.0",
+    "@aws-sdk/client-secrets-manager": "^3.848.0",
+    "@aws-sdk/credential-providers": "^3.848.0",
+    "@aws-sdk/lib-dynamodb": "^3.768.0",
+    "@aws-sdk/protocol-http": "^3.370.0",
+    "@aws-sdk/signature-v4": "^3.370.0",
+    "@google/genai": "^1.10.0",
+    "aws-amplify": "^6.14.1",
+    "aws-cdk": "^2.184.1",
+    "aws-cdk-lib": "^2.206.0",
+    "constructs": "^10.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "description": "This is a blank project for CDK development with TypeScript.",
+  "main": "jest.config.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

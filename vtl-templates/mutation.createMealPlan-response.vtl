@@ -1,0 +1,23 @@
+## Response for createMealPlan
+## Transforms the result of the PutItem operation into the MealPlanResponse type.
+
+#if($ctx.error)
+    $util.error($ctx.error.message, $ctx.error.type)
+#end
+
+## If the PutItem operation was successful, $ctx.result will contain the new item.
+#if($ctx.result)
+    {
+        "success": true,
+        "message": "Meal plan created successfully.",
+        "mealPlanId": "$ctx.result.mealPlanId"
+    }
+#else
+    ## This block will be executed if the PutItem operation failed for some reason,
+    ## e.g., a condition check failure.
+    {
+        "success": false,
+        "message": "Failed to create meal plan. A plan with this ID may already exist or there was another issue.",
+        "mealPlanId": null
+    }
+#end 

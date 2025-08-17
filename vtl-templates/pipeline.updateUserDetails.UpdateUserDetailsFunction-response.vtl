@@ -1,0 +1,13 @@
+      
+## vtl-templates/pipeline.updateUserDetails.UpdateUserDetailsFunction-response.vtl
+
+#if ($ctx.error)
+  $util.error($ctx.error.message, $ctx.error.type)
+#else
+  ## The UpdateItem operation was successful.
+  ## The next function (shared GetUserDetails) will use $ctx.identity.sub on its own.
+  ## We can return a simple success or the userId for completeness.
+  $util.toJson({ "updateSucceeded": true, "userId": $ctx.identity.sub })
+#end
+
+    

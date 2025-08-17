@@ -1,0 +1,23 @@
+#if($ctx.error)
+  $util.error($ctx.error.message, $ctx.error.type)
+#end
+
+## Store the PlanDayCompletion item (or null if none exists for today's active plan)
+$ctx.stash.completedLog = $ctx.result
+
+## Ensure completedMealNames is a list if it exists
+#if($ctx.result && $ctx.result.completedMealNames && $ctx.result.completedMealNames.values)
+  #set($completedList = [])
+  #foreach($item in $ctx.result.completedMealNames.values)
+    $util.qr($completedList.add($item))
+  #end
+  $util.qr($ctx.result.put("completedMealNames", $completedList))
+#elseif($ctx.result && !$ctx.result.completedMealNames)
+  $util.qr($ctx.result.put("completedMealNames", []))
+#end
+
+#if($ctx.result)
+  $util.toJson($ctx.result)
+#else
+  null ## It's fine for this function to return null if no log found
+#end

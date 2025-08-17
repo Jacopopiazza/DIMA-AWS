@@ -1,0 +1,75 @@
+# Query to list all available nutritionists
+query ListAllNutritionists($limit: Int, $nextToken: String) {
+  listNutritionists(limit: $limit, nextToken: $nextToken) {
+    items {
+      nutritionistId
+      givenName
+      familyName
+      specialization
+      bio
+      profilePictureUrl
+      isAvailable
+    }
+    nextToken
+  }
+}
+
+# Query to list only available nutritionists
+query ListAvailableNutritionists($limit: Int, $nextToken: String) {
+  listNutritionists(
+    filter: { isAvailable: true }
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      nutritionistId
+      givenName
+      familyName
+      specialization
+      bio
+      profilePictureUrl
+      isAvailable
+    }
+    nextToken
+  }
+}
+
+# Query to list unavailable nutritionists
+query ListUnavailableNutritionists($limit: Int, $nextToken: String) {
+  listNutritionists(
+    filter: { isAvailable: false }
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      nutritionistId
+      givenName
+      familyName
+      specialization
+      bio
+      profilePictureUrl
+      isAvailable
+    }
+    nextToken
+  }
+}
+
+# Minimal query with just essential fields
+query ListNutritionistsMinimal($limit: Int, $nextToken: String) {
+  listNutritionists(limit: $limit, nextToken: $nextToken) {
+    items {
+      nutritionistId
+      givenName
+      familyName
+      isAvailable
+    }
+    nextToken
+  }
+}
+
+# Query with variables example
+# Variables:
+# {
+#   "limit": 10,
+#   "nextToken": null
+# }

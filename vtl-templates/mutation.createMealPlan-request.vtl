@@ -1,0 +1,98 @@
+## Mutation: createMealPlan(input: CreateMealPlanInput!)
+## Action: Create a new MEAL_PLAN item for a user.
+
+#if(!$ctx.identity.sub)
+  $util.unauthorized()
+#end
+
+## The PK for a meal plan is USER#[userId], and the SK is PLAN#[planId]
+#set($userId = $ctx.identity.sub)
+#set($planId = $util.autoId()) ## Generate a unique ID for the new plan
+#set($pk = "USER#" + $userId)
+#set($sk = "PLAN#" + $planId)
+
+## Get user details to check for existing active plan
+#set($userDetailsPk = "USER#" + $userId)
+#set($userDetailsSk = "DETAILS")
+#set($getUserDetails = {
+  "version": "2018-05-29",
+  "operation": "GetItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($userDetailsPk),
+    "SK": $util.dynamodb.toDynamoDBJson($userDetailsSk)
+  }
+})
+
+#set($userDetailsResult = $util.dynamodb.executeGetItem($getUserDetails))
+#set($userDetails = $userDetailsResult.Item)
+#set($existingActivePlanId = $userDetails && $userDetails.activeMealPlanId ? $userDetails.activeMealPlanId : null)
+
+## If there's an existing active plan, update its status to ARCHIVED
+#if($existingActivePlanId)
+  #set($existingPlanPk = "USER#" + $userId)
+  #set($existingPlanSk = "PLAN#" + $existingActivePlanId)
+  #set($updateExistingPlan = {
+    "version": "2018-05-29",
+    "operation": "UpdateItem",
+    "key": {
+      "PK": $util.dynamodb.toDynamoDBJson($existingPlanPk),
+      "SK": $util.dynamodb.toDynamoDBJson($existingPlanSk)
+    },
+    "update": {
+      "expression": "SET #status = :status, updatedAt = :now",
+      "expressionNames": {
+        "#status": "status"
+      },
+      "expressionValues": {
+        ":status": $util.dynamodb.toDynamoDBJson("ARCHIVED"),
+        ":now": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601())
+      }
+    }
+  })
+  $util.dynamodb.executeUpdateItem($updateExistingPlan)
+#end
+
+#set($details = $ctx.args.input)
+#set($attributeValues = {})
+$util.qr($attributeValues.put("planName", $util.dynamodb.toDynamoDB($details.planName)))
+$util.qr($attributeValues.put("startDate", $util.dynamodb.toDynamoDB($details.startDate)))
+$util.qr($attributeValues.put("endDate", $util.dynamodb.toDynamoDB($details.endDate)))
+$util.qr($attributeValues.put("dailyPlan", $util.dynamodb.toDynamoDB($details.dailyPlan)))
+$util.qr($attributeValues.put("mealPlanId", $util.dynamodb.toDynamoDB($planId)))
+$util.qr($attributeValues.put("PK", $util.dynamodb.toDynamoDB($pk)))
+$util.qr($attributeValues.put("SK", $util.dynamodb.toDynamoDB($sk)))
+$util.qr($attributeValues.put("entityType", $util.dynamodb.toDynamoDB("MEAL_PLAN")))
+$util.qr($attributeValues.put("createdAt", $util.dynamodb.toDynamoDB($util.time.nowISO8601())))
+$util.qr($attributeValues.put("updatedAt", $util.dynamodb.toDynamoDB($util.time.nowISO8601())))
+$util.qr($attributeValues.put("status", $util.dynamodb.toDynamoDB("ACTIVE")))
+
+## Set the new plan as active in UserDetails
+#set($updateUserDetails = {
+  "version": "2018-05-29",
+  "operation": "UpdateItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($userDetailsPk),
+    "SK": $util.dynamodb.toDynamoDBJson($userDetailsSk)
+  },
+  "update": {
+    "expression": "SET activeMealPlanId = :planId, updatedAt = :now",
+    "expressionValues": {
+      ":planId": $util.dynamodb.toDynamoDBJson($planId),
+      ":now": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601())
+    }
+  }
+})
+$util.dynamodb.executeUpdateItem($updateUserDetails)
+
+{
+  "version": "2018-05-29",
+  "operation": "PutItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($pk),
+    "SK": $util.dynamodb.toDynamoDBJson($sk)
+  },
+  "attributeValues": $util.toJson($attributeValues),
+  "condition": {
+    "expression": "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+  }
+}

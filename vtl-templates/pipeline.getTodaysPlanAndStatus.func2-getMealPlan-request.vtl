@@ -1,0 +1,21 @@
+## Pipeline Function 2: Get Active MealPlan
+## Action: Use activeMealPlanId from previous function's result (in stash)
+
+#set($userId = $ctx.identity.sub) ## Can get from $ctx.identity again or $ctx.stash.userDetails.userId
+#set($activeMealPlanId = $ctx.stash.userDetails.activeMealPlanId)
+
+#if(!$activeMealPlanId)
+  $util.error("No active meal plan set for the user.", "NotFound")
+#end
+
+#set($pk = "USER#" + $userId)
+#set($sk = "MP#" + $activeMealPlanId) ## VERIFY: Use MP# or PLAN# for MealPlan SK prefix
+
+{
+  "version": "2018-05-29",
+  "operation": "GetItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($pk),
+    "SK": $util.dynamodb.toDynamoDBJson($sk)
+  }
+}

@@ -1,0 +1,701 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+# ===================
+#      SCALARS
+# ===================
+scalar AWSDate
+scalar AWSDateTime
+scalar AWSEmail
+scalar AWSURL
+scalar AWSJSON # For flexible preferences or potentially the DailyPlan if needed, though Map is preferred
+# ===================
+#        ENUMS
+# ===================
+"""
+Represents common food allergens based on EU FIC (Regulation (EU) No 1169/2011) and potentially others.
+"""
+enum AllergenEnum {
+  """
+  Cereals containing gluten, namely: wheat (such as spelt and khorasan wheat), rye, barley, oats or their hybridised strains, and products thereof.
+  """
+  GLUTEN_CEREALS
+  """
+  Crustaceans and products thereof.
+  """
+  CRUSTACEANS
+  """
+  Eggs and products thereof.
+  """
+  EGGS
+  """
+  Fish and products thereof.
+  """
+  FISH
+  """
+  Peanuts and products thereof.
+  """
+  PEANUTS
+  """
+  Soybeans and products thereof.
+  """
+  SOYBEANS
+  """
+  Milk and products thereof (including lactose).
+  """
+  MILK
+  """
+  Nuts, namely: almonds, hazelnuts, walnuts, cashews, pecan nuts, Brazil nuts, pistachio nuts, macadamia or Queensland nuts, and products thereof.
+  """
+  NUTS
+  """
+  Celery and products thereof.
+  """
+  CELERY
+  """
+  Mustard and products thereof.
+  """
+  MUSTARD
+  """
+  Sesame seeds and products thereof.
+  """
+  SESAME_SEEDS
+  """
+  Sulphur dioxide and sulphites at concentrations of more than 10 mg/kg or 10 mg/litre in terms of the total SO2.
+  """
+  SULPHITES
+  """
+  Lupin and products thereof.
+  """
+  LUPIN
+  """
+  Molluscs and products thereof.
+  """
+  MOLLUSCS
+}
+
+enum ExerciseFrequency {
+  NOT_SPECIFIED
+  NONE
+  ONCE_A_WEEK
+  TWICE_A_WEEK
+  THREE_TIMES_A_WEEK
+  FOUR_TIMES_A_WEEK
+  FIVE_TIMES_A_WEEK
+  SIX_TIMES_A_WEEK
+  EVERY_DAY
+}
+
+enum MealNameEnum {
+  BREAKFAST
+  SNACK_MORNING
+  LUNCH
+  SNACK_AFTERNOON
+  DINNER
+  SNACK_EVENING
+}
+
+enum MealPlanGenerationStatusValue {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum PlanStatus {
+  PENDING
+  IN_PROGRESS
+  GENERATED
+  ACTIVE
+  ARCHIVED
+  FAILED
+}
+
+enum MealPlanValidationStatus {
+  NOT_VALIDATED
+  VALIDATED
+  PENDING_REVIEW
+}
+
+enum SenderType {
+  USER
+  NUTRITIONIST
+}
+
+enum WeekdayEnum {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+# ===================
+#     OBJECT TYPES
+# ===================
+"""
+Represents a single message within a chat session.
+"""
+type ChatMessage @model {
+  chatId: ID! # From PK
+  messageId: ID! # From SK (e.g., MSG#timestamp)
+  senderId: ID!
+  senderType: SenderType!
+  messageContent: String!
+  sentAt: AWSDateTime! # From SK timestamp part or separate attribute
+}
+
+"""
+Connection type for paginated ChatMessage results.
+"""
+type ChatMessageConnection {
+  items: [ChatMessage!]!
+  nextToken: String
+}
+
+"""
+Metadata for a chat session between a user and a nutritionist regarding a meal plan.
+"""
+type ChatMetadata @model {
+  chatId: ID!
+  userId: ID!
+  mealPlanId: ID!
+  nutritionistId: ID!
+  planName: String # Denormalized for easier display in chat lists
+  userGivenName: String # Denormalized for display
+  nutritionistGivenName: String # Denormalized for display
+  lastMessageTimestamp: AWSDateTime
+  lastMessageSnippet: String
+  userUnreadCount: Int
+  nutritionistUnreadCount: Int
+  createdAt: AWSDateTime
+}
+
+type ChatMetadataConnection {
+  items: [ChatMetadata!]!
+  nextToken: String
+}
+
+"""
+Represents the Map<Weekday, List<MealObject>> structure for daily meals.
+"""
+type DailyPlanData {
+  monday: [Meal!]
+  tuesday: [Meal!]
+  wednesday: [Meal!]
+  thursday: [Meal!]
+  friday: [Meal!]
+  saturday: [Meal!]
+  sunday: [Meal!]
+}
+
+"""
+Represents a single ingredient within a meal.
+"""
+type Ingredient {
+  name: String!
+  amount: Float!
+  unit: String # e.g., "g", "ml", "cup". Ensure this is stored in DynamoDB.
+  macros: Macros!
+}
+
+"""
+Represents macronutrient breakdown.
+"""
+type Macros {
+  proteins: Float!
+  carbohydrates: Float!
+  fats: Float!
+  calories: Float!
+}
+
+"""
+Represents a single meal within a day's plan.
+"""
+type Meal {
+  name: MealNameEnum! # Using the fixed enum based on i18n requirement
+  recipeName: String # Optional: A more descriptive name for the specific recipe used
+  ingredients: [Ingredient!]!
+  totalMacros: Macros!
+  recipe: String # Instructions / Preparation steps
+}
+
+type MealPlan @model {
+  mealPlanId: ID! # Extracted from SK
+  userId: ID! # From PK
+  planName: String
+  generatedAt: AWSDateTime
+  status: PlanStatus
+  validationStatus: MealPlanValidationStatus
+  assignedNutritionistId: ID
+  chatId: ID
+  dailyPlan: DailyPlanData # The core plan structure using Map<Weekday, List<MealObject>>
+}
+
+#  Pagination Helper Types
+type MealPlanConnection {
+  items: [MealPlan!]!
+  nextToken: String
+  activeMealPlan: MealPlan
+}
+
+"""
+Status result for the asynchronous meal plan generation mutation.
+"""
+type MealPlanGenerationStatus {
+  status: MealPlanGenerationStatusValue!
+  mealPlanId: ID # Populated if status is COMPLETED
+  message: String # Optional message for progress or errors
+}
+
+"""
+Represents a Meal along with its completion status for the day
+"""
+type MealWithStatus {
+  meal: Meal!
+  isCompleted: Boolean!
+}
+
+"""
+Represents public-facing details of a nutritionist.
+"""
+type NutritionistProfile @model {
+  id: ID!
+  nutritionistId: ID!
+  givenName: String
+  familyName: String
+  # email: AWSEmail # Consider privacy if showing email directly to users
+  specialization: String
+  bio: String
+  profilePictureUrl: String # Nullable, TODO: revert to AWSURL
+  isAvailable: Boolean
+}
+
+type NutritionistProfileConnection {
+  items: [NutritionistProfile!]!
+  nextToken: String
+}
+
+"""
+Represents the completion status of meals for a specific plan on a specific date.
+"""
+type PlanDayCompletion @model {
+  # If using Amplify @model, ensure it maps to the correct DDB keys
+  userId: ID! # Matches user, for authorization and potential PK
+  planId: ID! # Identifies the meal plan
+  date: AWSDate! # The specific date of completion
+  completedMealNames: [MealNameEnum!]! # List of completed meal names
+  updatedAt: AWSDateTime! # Timestamp of the last update for this record
+}
+
+"""
+Combined type for the Today page query result.
+"""
+type TodaysPlan {
+  activePlanDetails: MealPlan
+  mealsForToday: [MealWithStatus!]
+  todaysCompletion: PlanDayCompletion
+}
+
+"""
+Represents user profile details and preferences stored in DynamoDB.
+"""
+type UserDetails @model {
+  # Attributes stored in DynamoDB UserDetails item
+  userId: ID! @primaryKey # Typically the Cognito Sub
+  weightKg: Float
+  heightCm: Float
+  dateOfBirth: AWSDate # Optional, if needed for age-based recommendations
+  exerciseFrequency: ExerciseFrequency
+  dailyMealsPreference: Int
+  allergies: [AllergenEnum!]
+  dietaryRestrictions: String
+  openTextPreferences: String
+  activeMealPlanId: ID # ID of the currently active MealPlan
+  updatedAt: AWSDateTime # Timestamp of the last update for this record
+  createdAt: AWSDateTime # Timestamp of when the user was created
+}
+
+# ===================
+#     INPUT TYPES
+# ===================
+"""
+Input for assigning a nutritionist to a specific meal plan.
+"""
+input AssignNutritionistInput {
+  mealPlanId: ID!
+  nutritionistId: ID!
+}
+
+"""
+Input for requesting validation of a meal plan by a user.
+"""
+input RequestValidationInput {
+  mealPlanId: ID!
+  nutritionistId: ID!
+}
+
+"""
+Input for creating a new meal plan directly.
+"""
+input CreateMealPlanInput {
+  planName: String!
+  startDate: AWSDate!
+  endDate: AWSDate!
+  status: PlanStatus
+  dailyPlan: DailyPlanDataInput!
+}
+
+"""
+Input for the map of daily meals.
+"""
+input DailyPlanDataInput {
+  monday: [MealInput!]
+  tuesday: [MealInput!]
+  wednesday: [MealInput!]
+  thursday: [MealInput!]
+  friday: [MealInput!]
+  saturday: [MealInput!]
+  sunday: [MealInput!]
+}
+
+"""
+Input for a single ingredient within a meal.
+"""
+input IngredientInput {
+  name: String!
+  amount: Float!
+  unit: String
+  macros: MacrosInput!
+}
+
+input ListNutritionistsFilter {
+  isAvailable: Boolean
+}
+
+"""
+Input for macronutrient breakdown.
+"""
+input MacrosInput {
+  proteins: Float!
+  carbohydrates: Float!
+  fats: Float!
+  calories: Float!
+}
+
+"""
+Input for marking a meal as completed for the current day.
+"""
+input MarkMealCompletedInput {
+  mealPlanId: ID!
+  mealName: MealNameEnum!
+  date: AWSDate # Optional: Defaults to today if not provided by server
+}
+
+"""
+Input for a single meal within a day's plan.
+"""
+input MealInput {
+  name: MealNameEnum!
+  recipeName: String
+  ingredients: [IngredientInput!]!
+  totalMacros: MacrosInput!
+  recipe: String
+}
+
+"""
+Input for specifying preferences when requesting a new meal plan.
+"""
+input PlanRequestPreferencesInput {
+  # Include fields from UserDetails that can be overridden for this specific plan request
+  weightKg: Float
+  heightCm: Float
+  dateOfBirth: AWSDate # Optional, if needed for age-based recommendations
+  exerciseFrequency: ExerciseFrequency
+  dailyMealsPreference: Int
+  allergies: [AllergenEnum!]
+  dietaryRestrictions: String
+  openTextPreferences: String
+}
+
+"""
+Input for sending a chat message.
+"""
+input SendMessageInput {
+  chatId: ID! # The ID of the chat session
+  messageContent: String!
+}
+
+"""
+Input for setting the completion status of a meal plan for a specific day. Used to sync offline data.
+"""
+input SetPlanDayCompletionInput {
+  planId: ID!
+  date: AWSDate!
+  completedMealNames: [MealNameEnum!]!
+}
+
+"""
+Input for unmarking a meal as completed for the current day.
+"""
+input UnmarkMealCompletedInput {
+  mealPlanId: ID!
+  mealName: MealNameEnum!
+  date: AWSDate # Optional: Defaults to today if not provided by server
+}
+
+"""
+Input for updating user preferences/details.
+"""
+input UpdateUserDetailsInput {
+  weightKg: Float
+  heightCm: Float
+  dateOfBirth: AWSDate # Optional, if needed for age-based recommendations
+  exerciseFrequency: ExerciseFrequency
+  dailyMealsPreference: Int
+  allergies: [AllergenEnum!]
+  dietaryRestrictions: String
+  openTextPreferences: String
+}
+
+"""
+Input for updating nutritionist profile.
+"""
+input UpdateNutritionistProfileInput {
+  givenName: String
+  familyName: String
+  specialization: String
+  bio: String
+  profilePictureUrl: String
+  isAvailable: Boolean
+}
+
+"""
+Input for validating a meal plan.
+"""
+input ValidateMealPlanInput {
+  mealPlanId: ID!
+  validationStatus: MealPlanValidationStatus!
+}
+
+"""
+The response after creating a meal plan.
+"""
+type MealPlanResponse {
+  success: Boolean!
+  message: String
+  mealPlanId: ID
+}
+
+"""
+Represents a list of meal plans for the authenticated user.
+"""
+type MealPlanList {
+  items: [MealPlan!]!
+  nextToken: String
+  activeMealPlan: ID
+}
+
+# ===================
+#       QUERIES
+# ===================
+type Query {
+  """
+  Gets messages for a specific chat session. Requires pagination. Resolver must check participation.
+  """
+  getChatMessages(
+    chatId: ID!
+    limit: Int
+    nextToken: String
+  ): ChatMessageConnection @aws_auth(cognito_groups: ["USERS", "NUTRITIONISTS"])
+
+  """
+  Gets a specific MealPlan by its ID. Resolver must verify ownership.
+  """
+  getMealPlanById(mealPlanId: ID!): MealPlan
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Fetches the meal completion status for a specific plan on a specific date for the authenticated user.
+  """
+  getPlanDayCompletion(planId: ID!, date: AWSDate!): PlanDayCompletion
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Fetches data needed for the 'Today' page: active plan's details for today and completion status.
+  """
+  getTodaysPlanAndStatus: TodaysPlan @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Fetches the UserDetails (preferences, etc.) for the authenticated user.
+  """
+  getUserDetails: UserDetails @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Fetches the NutritionistProfile for the authenticated nutritionist.
+  """
+  getMyNutritionistProfile: NutritionistProfile
+    @aws_auth(cognito_groups: ["NUTRITIONISTS"])
+
+  """
+  Lists chat sessions assigned to the authenticated nutritionist. Supports pagination.
+  """
+  listMyAssignedChats(limit: Int, nextToken: String): ChatMetadataConnection
+    @aws_auth(cognito_groups: ["NUTRITIONISTS"])
+
+  """
+  Lists chat sessions for the authenticated user. Supports pagination. (Pro feature)
+  """
+  listMyChats(limit: Int, nextToken: String): ChatMetadataConnection
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Lists MealPlans for the authenticated user. Supports pagination.
+  """
+  listMyMealPlans(limit: Int, nextToken: String): MealPlanList
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Lists available nutritionists, potentially filterable. Supports pagination. (Pro feature?)
+  """
+  listNutritionists(
+    filter: ListNutritionistsFilter
+    limit: Int
+    nextToken: String
+  ): NutritionistProfileConnection @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Get the meal plan currently active for the user.
+  """
+  getActiveMealPlan: MealPlan @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Lists meal plans assigned to the authenticated nutritionist. Only meal plans with PENDING_REVIEW status are returned. Supports pagination.
+  """
+  listMyAssignedMealPlans(limit: Int, nextToken: String): MealPlanList
+    @aws_auth(cognito_groups: ["NUTRITIONISTS"])
+}
+
+# ===================
+#      MUTATIONS
+# ===================
+type Mutation {
+  """
+  Assigns a nutritionist to a meal plan, initiating the chat capability. (Pro feature)
+  """
+  assignNutritionistToPlan(input: AssignNutritionistInput!): MealPlan
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Requests validation of a meal plan by a nutritionist.
+  """
+  requestValidation(input: RequestValidationInput!): MealPlanResponse
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Creates or updates the nutritionist profile for the authenticated nutritionist.
+  """
+  updateMyNutritionistProfile(
+    input: UpdateNutritionistProfileInput!
+  ): NutritionistProfile @aws_auth(cognito_groups: ["NUTRITIONISTS"])
+
+  """
+  Directly creates a new meal plan.
+  Typically used by nutritionists or for admin purposes.
+  """
+  createMealPlan(input: CreateMealPlanInput!): MealPlanResponse
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Deletes a meal plan.
+  """
+  deleteMealPlan(mealPlanId: ID!): MealPlanResponse
+    @aws_auth(cognito_groups: ["USERS", "NUTRITIONISTS"])
+
+  """
+  Modifies a meal plan.
+  """
+  modifyMealPlan(mealPlanId: ID!, mealPlanName: String): MealPlanResponse
+    @aws_auth(cognito_groups: ["USERS", "NUTRITIONISTS"])
+
+  """
+  Gets a meal plan by its ID.
+  """
+  getMealPlanById(mealPlanId: ID!): MealPlan
+    @aws_auth(cognito_groups: ["USERS", "NUTRITIONISTS"])
+
+  """
+  Marks a meal as completed for today for the authenticated user.
+  """
+  markMealAsCompleted(input: MarkMealCompletedInput!): PlanDayCompletion
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Initiates the generation of a new meal plan, potentially overriding default preferences. Can be async.
+  """
+  requestNewMealPlan(
+    prefsOverride: PlanRequestPreferencesInput
+  ): MealPlanGenerationStatus @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Sends a message within a specific chat session. Resolver must check participation.
+  """
+  sendChatMessage(input: SendMessageInput!): ChatMessage
+    @aws_auth(cognito_groups: ["USERS", "NUTRITIONISTS"])
+
+  """
+  Sets a specific meal plan as the active one for the user.
+  """
+  setActiveMealPlan(mealPlanId: ID!): MealPlanResponse
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Sets the complete list of completed meals for a specific plan on a specific date.
+  Useful for bulk updates or syncing from an offline-first client.
+  """
+  setPlanDayCompletion(input: SetPlanDayCompletionInput!): PlanDayCompletion
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Unmarks a meal as completed for today for the authenticated user.
+  """
+  unmarkMealAsCompleted(input: UnmarkMealCompletedInput!): PlanDayCompletion
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Updates details/preferences for the authenticated user. Replaces putUserPreferences.
+  """
+  updateUserDetails(input: UpdateUserDetailsInput!): UserDetails
+    @aws_auth(cognito_groups: ["USERS"])
+
+  """
+  Validates a meal plan.
+  """
+  validateMealPlan(input: ValidateMealPlanInput!): MealPlanResponse
+    @aws_auth(cognito_groups: ["NUTRITIONISTS"])
+
+  # The Plan generation Lambda function calls this internally.
+  # This updates the plan with the data from Gemini. This mutation
+  # will trigger the subscription.
+  # You should secure this so only the Lambda's IAM Role can call it.
+  updateGeneratedMealPlan(
+    mealPlanId: ID!
+    dailyPlan: DailyPlanDataInput!
+    status: PlanStatus!
+  ): MealPlan
+}
+
+# ---------------------------------------------------
+# 4. REQUIRED SUBSCRIPTION
+# How the Flutter app listens for the final result.
+# ---------------------------------------------------
+type Subscription {
+  # The Flutter app subscribes to this using the current user's ID
+  # right after `requestNewMealPlan` returns.
+  onPlanUpdated(userId: ID!): MealPlan
+    @aws_subscribe(mutations: ["updateGeneratedMealPlan"])
+}

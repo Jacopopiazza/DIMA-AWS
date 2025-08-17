@@ -1,0 +1,121 @@
+## Get authenticated user's ID (sub)
+#set($authenticatedUserId = $ctx.identity.sub)
+
+#if(!$authenticatedUserId || $authenticatedUserId == "")
+  $util.unauthorized()
+#end
+
+## Define the PK and SK values based on your single-table design
+#set($pkValue = "USER#" + $authenticatedUserId)
+#set($skValue = "USER_DETAILS")
+
+{
+    "version" : "2018-05-29",
+    "operation" : "UpdateItem",
+    "key" : {
+        "PK" : $util.dynamodb.toDynamoDBJson($pkValue), ## Corrected: Use "PK" (uppercase)
+        "SK" : $util.dynamodb.toDynamoDBJson($skValue)  ## Corrected: Use "SK" (uppercase)
+    },
+
+    ## Set up containers for update expression elements
+    #set( $expNames  = {} )
+    #set( $expValues = {} )
+    #set( $expSet = {} )
+    #set( $expAdd = {} )
+    #set( $expRemove = [] )
+
+    ## Automatically update the 'updatedAt' timestamp
+    #set( $timestamp = $util.time.nowISO8601() )
+    $!{expSet.put("#updatedAt", ":updatedAt")}
+    $!{expNames.put("#updatedAt", "updatedAt")}
+    $!{expValues.put(":updatedAt", { "S": "$timestamp" })}
+
+    ## Iterate through each argument from the input object
+    #foreach( $entry in $ctx.args.input.entrySet() )
+        #set( $key = $entry.key )
+        #set( $value = $entry.value )
+
+        ## Determine if the attribute should be removed
+        #set( $shouldRemove = false )
+        #if( $util.isNull($value) )
+            #set( $shouldRemove = true )
+        #elseif( $util.isString($value) && $value.isEmpty() )
+            #set( $shouldRemove = true )
+        #elseif( $key == "allergies" && $util.isList($value) && $value.isEmpty() )
+            #set( $shouldRemove = true )
+        #end
+
+        #if( $shouldRemove )
+            #set( $discard = $expRemove.add("#${key}") )
+            $!{expNames.put("#${key}", "$key")}
+        #else
+            ## Otherwise, set (or update) the attribute
+            $!{expSet.put("#${key}", ":${key}")}
+            $!{expNames.put("#${key}", "$key")}
+
+            #if( $key == "weightKg" || $key == "heightCm" || $key == "targetCalories" ) ## Float types
+                $!{expValues.put(":${key}", { "N": "$value.toString()" })}
+            #elseif( $key == "dailyMealsPreference" ) ## Int type
+                $!{expValues.put(":${key}", { "N": "$value.toString()" })}
+            #elseif( $key == "allergies" ) ## List of Enums (strings)
+                #set( $dynamoDBList = [] )
+                #foreach( $item in $value )
+                    $!{dynamoDBList.add({ "S": "$item" })}
+                #end
+                $!{expValues.put(":${key}", { "L": $dynamoDBList })}
+            #else
+                ## String types: exerciseFrequency (Enum), dietaryRestrictions, openTextPreferences
+                $!{expValues.put(":${key}", { "S": "$value" })}
+            #end
+        #end
+    #end
+
+    ## Build the update expression string
+    #set( $expression = "" )
+
+    ## SET clause
+    #if( !${expSet.isEmpty()} )
+        #set( $expression = "SET" )
+        #foreach( $entry in $expSet.entrySet() )
+            #set( $expression = "${expression} ${entry.key} = ${entry.value}" )
+            #if ( $foreach.hasNext )
+                #set( $expression = "${expression}," )
+            #end
+        #end
+    #end
+
+    ## ADD clause
+    #if( !${expAdd.isEmpty()} )
+        #if( $expression != "" ) #set( $expression = "${expression} " ) #end
+        #set( $expression = "${expression}ADD" )
+        #foreach( $entry in $expAdd.entrySet() )
+            #set( $expression = "${expression} ${entry.key} ${entry.value}" )
+            #if ( $foreach.hasNext )
+                #set( $expression = "${expression}," )
+            #end
+        #end
+    #end
+
+    ## REMOVE clause
+    #if( !${expRemove.isEmpty()} )
+        #if( $expression != "" ) #set( $expression = "${expression} " ) #end
+        #set( $expression = "${expression}REMOVE" )
+        #foreach( $entry in $expRemove )
+            #set( $expression = "${expression} ${entry}" )
+            #if ( $foreach.hasNext )
+                #set( $expression = "${expression}," )
+            #end
+        #end
+    #end
+
+    ## Construct the final update object
+    "update" : {
+        "expression" : "${expression}"
+        #if( !${expNames.isEmpty()} )
+            ,"expressionNames" : $util.toJson($expNames)
+        #end
+        #if( !${expValues.isEmpty()} )
+            ,"expressionValues" : $util.toJson($expValues)
+        #end
+    }
+}

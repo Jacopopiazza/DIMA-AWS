@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["es2022", "DOM"],
+    "types": ["node", "jest"], // Explicitly include the types for AWS Lambda
+    "declaration": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": false,
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "experimentalDecorators": true,
+    "strictPropertyInitialization": false,
+    "typeRoots": ["./node_modules/@types"],
+    "outDir": "dist",
+    "esModuleInterop": true
+  },
+  "include": [
+    "src/**/*.ts", // Include all files in the 'src' directory
+    "bin/**/*.ts", // Include all files in the 'bin' directory
+    "lib/**/*.ts", // Include all files in the 'lib' directory
+    "test/**/*.ts" // Include all files in the 'test' directory
+  ],
+  "exclude": ["node_modules", "cdk.out", "dist"]
+}

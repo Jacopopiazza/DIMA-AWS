@@ -1,0 +1,32 @@
+## vtl-templates/getUserDetails-request.vtl (SHARED - User can only see their own)
+
+## Get authenticated user's ID (sub) - This is the ONLY user they can get details for.
+#set($authenticatedUserId = $ctx.identity.sub)
+
+#if(!$authenticatedUserId || $authenticatedUserId == "")
+  $util.unauthorized() ## Should be caught by AppSync auth mode, but good defense.
+#end
+
+## Stash the authenticatedUserId. This is useful for the response template if needed,
+## and reinforces that this is the ID being operated on.
+$util.qr($ctx.stash.put("resolvedUserId", $authenticatedUserId))
+
+## --- AUTHORIZATION CHECK ---
+## Since users can only get their own details, the authorization is implicit.
+## The $authenticatedUserId *is* the target user. No further checks needed here.
+## If $ctx.identity.sub is not present, AppSync's authorization configuration
+## (e.g., Cognito User Pools) should have already denied the request.
+## --- END AUTHORIZATION CHECK ---
+
+## Build key using the authenticatedUserId
+#set($pk = "USER#" + $authenticatedUserId)
+#set($sk = "USER_DETAILS") ## Your SK for user details
+
+{
+  "version": "2018-05-29",
+  "operation": "GetItem",
+  "key": {
+    "PK": $util.dynamodb.toDynamoDBJson($pk),
+    "SK": $util.dynamodb.toDynamoDBJson($sk)
+  }
+}

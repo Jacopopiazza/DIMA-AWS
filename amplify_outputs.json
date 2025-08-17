@@ -1,0 +1,20 @@
+{
+  "DataStack": {
+    "MealPlanningTableName": "MealPlanningTable",
+    "MealPlanningTableId": "MealPlanningTable",
+    "ExportsOutputRefMealPlanningTable35EE7411C5C3A95A": "MealPlanningTable",
+    "ExportsOutputFnGetAttMealPlanningTable35EE7411Arn59B7CFC9": "arn:aws:dynamodb:us-west-2:537124974525:table/MealPlanningTable"
+  },
+  "AuthStack": {
+    "UserPoolClientId": "1jpsfjkq93r6isi22opgl398kn",
+    "CognitoOAuthRedirectUri": "https://e2c748be1d135a2c6733.auth.us-west-2.amazoncognito.com/oauth2/idpresponse",
+    "UserPoolId": "us-west-2_fQpGATfnW",
+    "ExportsOutputRefUserPool6BA7E5F296FD7236": "us-west-2_fQpGATfnW",
+    "IdentityPoolId": "us-west-2:92fa5e1c-ce70-4a66-9b32-06ae93c14dcd"
+  },
+  "AppSyncApiStack": {
+    "GraphQLAPIId": "wwgcmu5mc5gfjba52dzhuhtyvi",
+    "GraphQLAPIURL": "https://wxc4v4f7ovcahml6nnsgvdbfea.appsync-api.us-west-2.amazonaws.com/graphql",
+    "AppSyncApiRegion": "us-west-2"
+  }
+}

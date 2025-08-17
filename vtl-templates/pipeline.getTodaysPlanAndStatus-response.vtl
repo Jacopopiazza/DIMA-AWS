@@ -1,0 +1,52 @@
+#### START CONTENT OF pipeline.getTodaysPlanAndStatus-response.vtl
+## Final Response Template for getTodaysPlanAndStatus Pipeline
+## Combines results from $ctx.stash: activePlan, completedLog (now PlanDayCompletion item)
+
+#if($ctx.error)
+  $util.error($ctx.error.message, $ctx.error.type)
+#end
+
+#if(!$ctx.stash.activePlan)
+  ## This should have been caught by func2 if userDetails had no active plan,
+  ## or if the active plan ID was invalid.
+  ## If activePlan is null but no error, it means user has no active plan,
+  ## or the plan was deleted. TodaysPlan expects an activePlanDetails.
+  ## Consider returning null for the whole TodaysPlan or a specific error.
+  ## For now, let's assume activePlan is always present if no earlier error.
+  $util.error("Could not retrieve active plan details.", "ServerError")
+#end
+
+#set($activePlan = $ctx.stash.activePlan)
+#set($todaysActualCompletion = $ctx.stash.completedLog) ## This is the PlanDayCompletion item or null
+#set($todayWeekdayKey = $ctx.stash.todayWeekdayKey) ## e.g., "monday"
+
+## Extract meals for today from the plan's dailyPlan map
+## Ensure dailyPlan in DDB is a Map { "monday": [...], "tuesday": [...] }
+#set($mealsForTodayRaw = [])
+#if($activePlan.dailyPlan && $activePlan.dailyPlan.get($todayWeekdayKey))
+  #set($mealsForTodayRaw = $activePlan.dailyPlan.get($todayWeekdayKey))
+#end
+
+## Prepare the list of MealWithStatus objects
+#set($mealsWithStatus = [])
+#foreach($meal in $mealsForTodayRaw)
+  #set($isCompleted = false)
+  ## Check against the completedMealNames list from the PlanDayCompletion item
+  #if($todaysActualCompletion && $todaysActualCompletion.completedMealNames && $todaysActualCompletion.completedMealNames.contains($meal.name))
+    #set($isCompleted = true)
+  #end
+  $util.qr($mealsWithStatus.add({
+    "meal": $meal,
+    "isCompleted": $isCompleted
+  }))
+#end
+
+## Construct the final TodaysPlan object
+#set($result = {
+  "activePlanDetails": $activePlan,
+  "mealsForToday": $mealsWithStatus,
+  "todaysCompletion": $todaysActualCompletion ## This is now correctly the PlanDayCompletion object or null
+})
+
+$util.toJson($result)
+#### END CONTENT OF pipeline.getTodaysPlanAndStatus-response.vtl
