@@ -271,6 +271,25 @@ export type MealPlanList = {
   nextToken?: Maybe<Scalars["String"]["output"]>;
 };
 
+/** Represents the notification for a meal plan update. */
+export type MealPlanNotification = {
+  __typename?: "MealPlanNotification";
+  error?: Maybe<Scalars["String"]["output"]>;
+  mealPlanId: Scalars["ID"]["output"];
+  status: Scalars["String"]["output"];
+  timestamp: Scalars["AWSDateTime"]["output"];
+  userId: Scalars["ID"]["output"];
+};
+
+/** Represents the input for a notification for a meal plan update. */
+export type MealPlanNotificationInput = {
+  error?: InputMaybe<Scalars["String"]["input"]>;
+  mealPlanId: Scalars["ID"]["input"];
+  status: Scalars["String"]["input"];
+  timestamp: Scalars["AWSDateTime"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
 /** The response after creating a meal plan. */
 export type MealPlanResponse = {
   __typename?: "MealPlanResponse";
@@ -309,6 +328,8 @@ export type Mutation = {
   markMealAsCompleted?: Maybe<PlanDayCompletion>;
   /** Modifies a meal plan. */
   modifyMealPlan?: Maybe<MealPlanResponse>;
+  /** Mutations solo per le notifiche (chiamate dalla notification lambda) */
+  notifyMealPlanStatusChanged?: Maybe<MealPlanNotification>;
   /** Initiates the generation of a new meal plan, potentially overriding default preferences. Can be async. */
   requestNewMealPlan?: Maybe<MealPlanGenerationStatus>;
   /** Requests validation of a meal plan by a nutritionist. */
@@ -324,7 +345,6 @@ export type Mutation = {
   setPlanDayCompletion?: Maybe<PlanDayCompletion>;
   /** Unmarks a meal as completed for today for the authenticated user. */
   unmarkMealAsCompleted?: Maybe<PlanDayCompletion>;
-  updateGeneratedMealPlan?: Maybe<MealPlan>;
   /** Creates or updates the nutritionist profile for the authenticated nutritionist. */
   updateMyNutritionistProfile?: Maybe<NutritionistProfile>;
   /** Updates details/preferences for the authenticated user. Replaces putUserPreferences. */
@@ -358,6 +378,10 @@ export type MutationModifyMealPlanArgs = {
   mealPlanName?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type MutationNotifyMealPlanStatusChangedArgs = {
+  input: MealPlanNotificationInput;
+};
+
 export type MutationRequestNewMealPlanArgs = {
   prefsOverride?: InputMaybe<PlanRequestPreferencesInput>;
 };
@@ -380,12 +404,6 @@ export type MutationSetPlanDayCompletionArgs = {
 
 export type MutationUnmarkMealAsCompletedArgs = {
   input: UnmarkMealCompletedInput;
-};
-
-export type MutationUpdateGeneratedMealPlanArgs = {
-  dailyPlan: DailyPlanDataInput;
-  mealPlanId: Scalars["ID"]["input"];
-  status: PlanStatus;
 };
 
 export type MutationUpdateMyNutritionistProfileArgs = {
@@ -545,10 +563,11 @@ export type SetPlanDayCompletionInput = {
 
 export type Subscription = {
   __typename?: "Subscription";
-  onPlanUpdated?: Maybe<MealPlan>;
+  /** Subscription notifica */
+  onMealPlanStatusChanged?: Maybe<MealPlanNotification>;
 };
 
-export type SubscriptionOnPlanUpdatedArgs = {
+export type SubscriptionOnMealPlanStatusChangedArgs = {
   userId: Scalars["ID"]["input"];
 };
 

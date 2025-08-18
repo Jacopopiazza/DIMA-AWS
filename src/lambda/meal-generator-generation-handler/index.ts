@@ -51,9 +51,13 @@ import {
   QueryCommandOutput,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
+import { MealPlanSNSMessage } from "../../types/MealPlanSNSMessage";
 
 // Get environment variables
-const { TABLE_NAME, GEMINI_SECRET_ARN, AWS_REGION } = process.env;
+const snsClient = new SNSClient({});
+const { TABLE_NAME, GEMINI_SECRET_ARN, AWS_REGION, SNS_TOPIC_ARN } =
+  process.env;
 
 // Initialize the DynamoDB client
 const dynamoDbClient = new DynamoDBClient({});
@@ -78,6 +82,38 @@ function calculateAge(dateOfBirth: string): number {
     age--;
   }
   return age;
+}
+
+async function publishMealPlanNotification(
+  notification: MealPlanSNSMessage,
+): Promise<void> {
+  if (!SNS_TOPIC_ARN) {
+    console.warn("SNS_TOPIC_ARN not configured, skipping notification");
+    return;
+  }
+
+  try {
+    const command = new PublishCommand({
+      TopicArn: SNS_TOPIC_ARN,
+      Message: JSON.stringify(notification),
+      MessageAttributes: {
+        userId: {
+          DataType: "String",
+          StringValue: notification.userId,
+        },
+        type: {
+          DataType: "String",
+          StringValue: notification.type,
+        },
+      },
+    });
+
+    await snsClient.send(command);
+    console.log("Notification published successfully:", notification.type);
+  } catch (error) {
+    console.error("Failed to publish notification:", error);
+    // NON lanciamo l'errore - la notifica è secondary
+  }
 }
 
 async function getGeminiApiKey(): Promise<string> {
@@ -500,7 +536,7 @@ export const handler: Handler<GeneratorEvent> = async (event) => {
     );
   }
 
-  const { mealPlanId, preferences } = event;
+  const { userId, mealPlanId, preferences } = event;
 
   if (!mealPlanId || !preferences) {
     console.error("Invalid event data:", event);
@@ -538,11 +574,21 @@ export const handler: Handler<GeneratorEvent> = async (event) => {
     }
 
     await updateMealPlanInDynamoDB(
-      event.userId,
+      userId,
       mealPlanId,
       PlanStatus.GENERATED,
       mealPlan,
     );
+
+    await publishMealPlanNotification({
+      type: "MEAL_PLAN_GENERATED",
+      userId,
+      mealPlanId,
+      timestamp: new Date().toISOString(),
+      details: {
+        planName: `Meal Plan ${new Date().toLocaleDateString()}`,
+      },
+    });
 
     console.log("Successfully processed and updated meal plan.");
     return { statusCode: 200, body: "SUCCESS" };
@@ -556,6 +602,17 @@ export const handler: Handler<GeneratorEvent> = async (event) => {
         mealPlanId,
         PlanStatus.FAILED,
       );
+
+      // 2. PUBBLICA NOTIFICA DI ERRORE (operazione secondaria)
+      await publishMealPlanNotification({
+        type: "MEAL_PLAN_FAILED",
+        userId,
+        mealPlanId,
+        timestamp: new Date().toISOString(),
+        details: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      });
     } catch (dbError) {
       console.error(
         "Error updating meal plan status to FAILED in DynamoDB:",

@@ -320,6 +320,35 @@ type UserDetails @model {
   createdAt: AWSDateTime # Timestamp of when the user was created
 }
 
+"""
+Represents the notification for a meal plan update.
+"""
+type MealPlanNotification @aws_iam {
+  userId: ID!
+  mealPlanId: ID!
+  status: String!
+  timestamp: AWSDateTime!
+  error: String
+}
+
+"""
+The response after creating a meal plan.
+"""
+type MealPlanResponse {
+  success: Boolean!
+  message: String
+  mealPlanId: ID
+}
+
+"""
+Represents a list of meal plans for the authenticated user.
+"""
+type MealPlanList {
+  items: [MealPlan!]!
+  nextToken: String
+  activeMealPlan: ID
+}
+
 # ===================
 #     INPUT TYPES
 # ===================
@@ -483,23 +512,15 @@ input ValidateMealPlanInput {
 }
 
 """
-The response after creating a meal plan.
+Represents the input for a notification for a meal plan update.
 """
-type MealPlanResponse {
-  success: Boolean!
-  message: String
-  mealPlanId: ID
+input MealPlanNotificationInput {
+  userId: ID!
+  mealPlanId: ID!
+  status: String!
+  timestamp: AWSDateTime!
+  error: String
 }
-
-"""
-Represents a list of meal plans for the authenticated user.
-"""
-type MealPlanList {
-  items: [MealPlan!]!
-  nextToken: String
-  activeMealPlan: ID
-}
-
 # ===================
 #       QUERIES
 # ===================
@@ -678,15 +699,12 @@ type Mutation {
   validateMealPlan(input: ValidateMealPlanInput!): MealPlanResponse
     @aws_auth(cognito_groups: ["NUTRITIONISTS"])
 
-  # The Plan generation Lambda function calls this internally.
-  # This updates the plan with the data from Gemini. This mutation
-  # will trigger the subscription.
-  # You should secure this so only the Lambda's IAM Role can call it.
-  updateGeneratedMealPlan(
-    mealPlanId: ID!
-    dailyPlan: DailyPlanDataInput!
-    status: PlanStatus!
-  ): MealPlan
+  """
+  Mutations solo per le notifiche (chiamate dalla notification lambda)
+  """
+  notifyMealPlanStatusChanged(
+    input: MealPlanNotificationInput!
+  ): MealPlanNotification @aws_iam
 }
 
 # ---------------------------------------------------
@@ -694,8 +712,10 @@ type Mutation {
 # How the Flutter app listens for the final result.
 # ---------------------------------------------------
 type Subscription {
-  # The Flutter app subscribes to this using the current user's ID
-  # right after `requestNewMealPlan` returns.
-  onPlanUpdated(userId: ID!): MealPlan
-    @aws_subscribe(mutations: ["updateGeneratedMealPlan"])
+  """
+  Subscription notifica
+  """
+  onMealPlanStatusChanged(userId: ID!): MealPlanNotification
+    @aws_subscribe(mutations: ["notifyMealPlanStatusChanged"])
+    @aws_auth(cognito_groups: ["USERS"])
 }
