@@ -715,7 +715,7 @@ type Subscription {
   """
   Subscription notifica
   """
-  onMealPlanStatusChanged(userId: ID!): MealPlanNotification
+  onMealPlanStatusChanged: MealPlanNotification
     @aws_subscribe(mutations: ["notifyMealPlanStatusChanged"])
     @aws_auth(cognito_groups: ["USERS"])
 }

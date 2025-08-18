@@ -553,6 +553,15 @@ export class AppSyncApiStack extends cdk.Stack {
     // Crea un data source "None" per le notification mutations (se non esiste già)
     const noneDS = api.addNoneDataSource("NotificationDataSource");
 
+    noneDS.createResolver("OnMealPlanStatusChangedSubscriptionResolver", {
+      typeName: "Subscription",
+      fieldName: "onMealPlanStatusChanged",
+      runtime: appsync.FunctionRuntime.JS_1_0_0,
+      code: appsync.Code.fromAsset(
+        "vtl-templates/subscription.onMealPlanStatusChanged.js",
+      ),
+    });
+
     // Resolver per la notification mutation unificata
     noneDS.createResolver("NotifyMealPlanStatusChangedResolver", {
       typeName: "Mutation",
